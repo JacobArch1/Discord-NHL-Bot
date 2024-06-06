@@ -178,33 +178,33 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     
     table = [
         '```',
-        f'{'#':<3}{'Name':<29}{'P':>2}{'Pts':>3}\n',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
     for player in team_stats['goalies']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<29}{player.get('positionCode','-'):>5}{player.get('points',0):>5}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     goalie_table = '\n'.join(table)
     embed.add_field(name='Goalies', value=goalie_table[:1024], inline=False)
 
     table = [
         '```',
-        f'{'#':<3}{'Name':<20}{'Pos':>5}{'Ht':>5}\n',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
     for player in team_stats['forwards']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<29}{player.get('positionCode','-'):>5}{player.get('points',0):>5}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     forward_table = '\n'.join(table)
     embed.add_field(name='Forwards', value=forward_table[:1024], inline=False)
 
     table = [
         '```',
-        f'{'#':<3}{'Name':<20}{'Pos':>5}{'Ht':>5}{'Wt':>5}\n',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
     for player in team_stats['defensemen']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<29}{player.get('positionCode', '-'):>5}{player.get('points',0):>5}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     defense_table = '\n'.join(table)
     embed.add_field(name='Defensemen', value=defense_table[:1024], inline=False)
