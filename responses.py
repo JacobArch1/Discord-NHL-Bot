@@ -1,8 +1,9 @@
+import sqlite3
 import discord
 import nhlresponses
 from unidecode import unidecode
 
-def get_response(command: str, user_message: str) -> str:
+def get_response(command: str, parameters: str, user_mention: str) -> discord.Embed:
     if command.startswith('help'):
         embed = discord.Embed(title = "Command List", color = discord.Color(0x6203fc))
         embed.add_field(name="playerstats", value="```Parameters: [firstName] [lastName] \nDisplays player stats```", inline=False)
@@ -22,7 +23,7 @@ SA - Shots Against\nGA - Goals Against\nSO - Shutouts\nA - Assists\nGAA - Goals 
         return embed
     elif command.startswith('playerstats'):
         try:
-            first_name, last_name = user_message.split(' ')
+            first_name, last_name = parameters.split(' ')
             first_name = unidecode(first_name)
             last_name = unidecode(last_name)
             return nhlresponses.get_player_stats(first_name, last_name)
@@ -37,21 +38,21 @@ SA - Shots Against\nGA - Goals Against\nSO - Shutouts\nA - Assists\nGAA - Goals 
             return return_error()
     elif command.startswith('standings'):
         try:
-            user_message = user_message.replace('-', '')
-            return nhlresponses.get_standings(user_message)  
+            season = parameters.replace('-', '')
+            return nhlresponses.get_standings(season)  
         except Exception as e:
             print(e)
             return return_error()
     elif command.startswith('leaders'):
         try:
-            position, category = user_message.split(' ')
+            position, category = parameters.split(' ')
             return nhlresponses.get_leaders(position, category)
         except Exception as e:
             print(e)
             return return_error()
     elif command.startswith('teamroster'):
         try:
-            team, season = user_message.split(' ')
+            team, season = parameters.split(' ')
             season = season.replace('-', '')
             return nhlresponses.get_team_roster(team, season)
         except Exception as e:
@@ -60,6 +61,76 @@ SA - Shots Against\nGA - Goals Against\nSO - Shutouts\nA - Assists\nGAA - Goals 
     elif command.startswith('playoffbracket'):
         try:
             return nhlresponses.get_playoff_bracket()
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('register'):
+        try:
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+            user_id = parameters
+
+            c.execute('SELECT * FROM Global_Economy WHERE user_id = ?', (user_id,))
+            user = c.fetchone()
+            if user:
+                embed = discord.Embed(title = "Error", color = discord.Color.red())
+                embed.add_field(name="", value="You are already registered.", inline=False)
+            else:
+                c.execute('INSERT INTO Global_Economy (user_id, balance) VALUES (?, ?)', (user_id, 100))
+                embed = discord.Embed(title = "Registered!", color = discord.Color.green())
+                embed.add_field(name="", value="You have succesfully registered to the global economy.", inline=False)
+                conn.commit()
+
+            conn.close()
+            return embed
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('bonus'):
+        try:
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+            user_id = parameters
+
+            c.execute('SELECT bonus FROM Global_Economy WHERE user_id = ?', (user_id,))
+            result = c.fetchone()
+
+            if result is None:
+                embed = discord.Embed(title="Error", color=discord.Color.yellow())
+                embed.add_field(name="", value="You are not registered in the economy. Use /register to register.", inline=False)
+            elif result[0] == 1:
+                embed = discord.Embed(title="Notice", color=discord.Color.yellow())
+                embed.add_field(name="", value="Your bonus has already been claimed.", inline=False)
+            else:
+                bonus_amount = 50
+                c.execute('UPDATE Global_Economy SET bonus = 1, balance = balance + ? WHERE user_id = ?', (bonus_amount, user_id))
+                conn.commit()
+
+                embed = discord.Embed(title="Claimed!", color=discord.Color.green())
+                embed.add_field(name="", value="You claimed your daily $50 bonus.", inline=False)
+
+            conn.close()
+            return embed
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('balance'):
+        try:
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+            user_id = parameters
+
+            c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
+            balance = c.fetchone()
+            if balance is None:
+                embed = discord.Embed(title="Error", color=discord.Color.yellow())
+                embed.add_field(name="", value="You are not registered in the economy. Use /register to register.", inline=False)
+            else:
+                embed = discord.Embed(title="Balance", color=discord.Color.green())
+                embed.add_field(name="", value=f"Your Balance is: ${balance[0]}", inline=False)
+
+            conn.close()
+            return embed
         except Exception as e:
             print(e)
             return return_error()

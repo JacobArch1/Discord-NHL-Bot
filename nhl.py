@@ -263,6 +263,10 @@ def get_playoff_carousel(season: int):
     return get_data('/v1/playoff-series/carousel/{season}/', 
         {'season': season})
 
+def get_playoff_bracket(year: str):
+    return get_data('/v1/playoff-bracket/{year}',
+        {'year': year})
+
 #SCHEDULE
 def get_series_schedule(season: int, series_letter: str):
     return get_data('/v1/schedule/playoff-series/{season}/{series_letter}', 

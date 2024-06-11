@@ -213,4 +213,26 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
 
 def get_playoff_bracket() -> discord.Embed:
     brackets = nhl.get_playoff_carousel(nhl.get_current_season())
+    if 'rounds' not in brackets:
+        embed = discord.Embed(color=discord.Color.red())
+        embed.add_field(name='Error', value='No playoff information available', inline=False)
+        return embed
+
+    embed = discord.Embed(color=discord.Color.purple())
+    
+    for round_data in brackets['rounds']:
+        round_number = round_data['roundNumber']
+        series_list = round_data['series']
+        
+        table = ['```', f'{'Top':<8}{'Score'}{'Btm':>8}\n']
+
+        for series in series_list:
+            top_seed = series['topSeed']
+            bottom_seed = series['bottomSeed']
+            table.append(f'{top_seed['abbrev']:<8}{top_seed['wins']} - {bottom_seed['wins']}{bottom_seed['abbrev']:>8}')
+        
+        table.append('```')
+        embed.add_field(name=f"Round {round_number}", value='\n'.join(table), inline=False)
+        
+    return embed
     

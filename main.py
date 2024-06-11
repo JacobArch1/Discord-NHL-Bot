@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -19,27 +20,27 @@ class Commands(commands.Cog):
 
     @app_commands.command(name='help')
     async def help_command(self, interaction: discord.Interaction):
-        response = get_response('help', None)
+        response = get_response('help', None, None)
         await interaction.response.send_message(embed=response, ephemeral=True)
 
     @app_commands.command(name='glossary')
     async def glossary_command(self, interaction: discord.Interaction):
-        response = get_response('glossary', None)
+        response = get_response('glossary', None, None)
         await interaction.response.send_message(embed=response, ephemeral=True)
 
     @app_commands.command(name='playerstats')
     @app_commands.describe(player="Enter first and last name, capitalize each.")
     async def playerstats_command(self, interaction: discord.Interaction, player: str):
-        response = get_response('playerstats', player)
+        response = get_response('playerstats', player, None)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='standings')
     @app_commands.describe(season="Get standings by year. Format: YYYY-YYYY")
     async def standings_command(self, interaction: discord.Interaction, season: Optional[str] = None):
         if season:
-            response = get_response('standings', season)
+            response = get_response('standings', season, None)
         else:
-            response = get_response('currentstandings', None)
+            response = get_response('currentstandings', None, None)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='leaders')
@@ -47,7 +48,7 @@ class Commands(commands.Cog):
     @app_commands.describe(category="Use /glossary for list of categories")
     async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
         params = f'{position} {category}'
-        response = get_response('leaders', params)
+        response = get_response('leaders', params, None)
         await interaction.response.send_message(embed=response)
     
     @app_commands.command(name="teamroster")
@@ -55,23 +56,98 @@ class Commands(commands.Cog):
     @app_commands.describe(season="Get team roster by year. Format: YYYY-YYYY")
     async def teamroster_command(self, interaction: discord.Interaction, team: str, season: Optional[str] = 'current'):
         params = f'{team} {season}'
-        response = get_response('teamroster', params)
+        response = get_response('teamroster', params, None)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name="playoffbracket")
     async def playoffbracket_command(self, interaction: discord.Interaction):
-        response = get_response('playoffbracket', None)
+        response = get_response('playoffbracket', None, None)
+        await interaction.response.send_message(embed=response)
+
+class Economy(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="register")
+    async def register_command(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        user_mention = interaction.user.mention
+        response = get_response('register', user_id, None)
+        await interaction.response.send_message(embed=response, ephemeral=True)
+
+    @app_commands.command(name="bonus")
+    async def bonus_command(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        response = get_response('bonus', user_id, None)
+        await interaction.response.send_message(embed=response)
+    
+    @app_commands.command(name="balance")
+    async def balance_command(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        response = get_response('balance', user_id, None)
         await interaction.response.send_message(embed=response)
 
 async def setup(bot):
     if 'Commands' not in bot.cogs:
         await bot.add_cog(Commands(bot))
-    else:
-        print('Cog named "Commands" is already loaded')
+        print("Commands Cog Synced")
+    if 'Economy' not in bot.cogs:
+        await bot.add_cog(Economy(bot))
+        print("Economy Cog Synced")
     await bot.tree.sync()
+
+def initialize_economy():
+    conn = sqlite3.connect('economy.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS Global_Economy (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL UNIQUE,
+            balance REAL NOT NULL DEFAULT 0.0,
+            bonus INTEGER NOT NULL DEFAULT 0,
+            num_bets INTEGER NOT NULL DEFAULT 0,
+            num_wins INTEGER NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS Betting_Pool (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            game_type INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            moneyline TEXT NOT NULL,
+            puckline REAL,
+            over_under REAL,
+            moneyline_bet REAL,
+            puckline_bet REAL,
+            over_under_bet REAL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS Bet_History (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            game_type INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            moneyline TEXT NOT NULL,
+            puckline REAL,
+            over_under REAL,
+            moneyline_bet REAL,
+            puckline_bet REAL,
+            over_under_bet REAL,
+            total_bet REAL NOT NULL,
+            payout REAL,
+            moneyline_win BOOLEAN,
+            puckline_win BOOLEAN,
+            over_under_win BOOLEAN,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
+    conn.commit()
+    conn.close()
+    print("Database Synced")
 
 @bot.event
 async def on_ready() -> None:
+    initialize_economy()
     print(f'{bot.user} is now running')
     await setup(bot)
 
