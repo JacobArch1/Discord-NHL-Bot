@@ -20,27 +20,27 @@ class Commands(commands.Cog):
 
     @app_commands.command(name='help')
     async def help_command(self, interaction: discord.Interaction):
-        response = get_response('help', None, None)
+        response = get_response('help', None)
         await interaction.response.send_message(embed=response, ephemeral=True)
 
     @app_commands.command(name='glossary')
     async def glossary_command(self, interaction: discord.Interaction):
-        response = get_response('glossary', None, None)
+        response = get_response('glossary', None)
         await interaction.response.send_message(embed=response, ephemeral=True)
 
     @app_commands.command(name='playerstats')
     @app_commands.describe(player="Enter first and last name, capitalize each.")
     async def playerstats_command(self, interaction: discord.Interaction, player: str):
-        response = get_response('playerstats', player, None)
+        response = get_response('playerstats', player)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='standings')
     @app_commands.describe(season="Get standings by year. Format: YYYY-YYYY")
     async def standings_command(self, interaction: discord.Interaction, season: Optional[str] = None):
         if season:
-            response = get_response('standings', season, None)
+            response = get_response('standings', season)
         else:
-            response = get_response('currentstandings', None, None)
+            response = get_response('currentstandings', None)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='leaders')
@@ -48,7 +48,7 @@ class Commands(commands.Cog):
     @app_commands.describe(category="Use /glossary for list of categories")
     async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
         params = f'{position} {category}'
-        response = get_response('leaders', params, None)
+        response = get_response('leaders', params)
         await interaction.response.send_message(embed=response)
     
     @app_commands.command(name="teamroster")
@@ -56,12 +56,12 @@ class Commands(commands.Cog):
     @app_commands.describe(season="Get team roster by year. Format: YYYY-YYYY")
     async def teamroster_command(self, interaction: discord.Interaction, team: str, season: Optional[str] = 'current'):
         params = f'{team} {season}'
-        response = get_response('teamroster', params, None)
+        response = get_response('teamroster', params)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name="playoffbracket")
     async def playoffbracket_command(self, interaction: discord.Interaction):
-        response = get_response('playoffbracket', None, None)
+        response = get_response('playoffbracket', None)
         await interaction.response.send_message(embed=response)
 
 class Economy(commands.Cog):
@@ -72,19 +72,34 @@ class Economy(commands.Cog):
     async def register_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
-        response = get_response('register', user_id, None)
+        response = get_response('register', user_id)
         await interaction.response.send_message(embed=response, ephemeral=True)
 
     @app_commands.command(name="bonus")
     async def bonus_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
-        response = get_response('bonus', user_id, None)
-        await interaction.response.send_message(embed=response)
-    
+        user_mention = interaction.user.mention
+        response = get_response('bonus', user_id)
+        await interaction.response.send_message(content= user_mention, embed=response)
+     
     @app_commands.command(name="balance")
     async def balance_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
-        response = get_response('balance', user_id, None)
+        user_mention = interaction.user.mention
+        response = get_response('balance', user_id)
+        await interaction.response.send_message(content= user_mention, embed=response)
+
+    @app_commands.command(name='placebet')
+    @app_commands.describe(moneyline='Bet on which team will win. Use the three letter abbreviation')
+    @app_commands.describe(moneyline_wager='Place your wager for your money line bet. Max $500, Min $1')
+    @app_commands.describe(puckline='Bet on what the score difference will be. Must be a float of .5')
+    @app_commands.describe(puckline_wager='Place your wager for your puck line bet. Max $500, Min $1')
+    @app_commands.describe(over_under='Bet on the total score of the game. Must be a float of .5')
+    @app_commands.describe(over_under_wager='Place your wager for your over/under bet. Max $500, Min $1')
+    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, puckline: Optional[float], puckline_wager: Optional[float], over_under: Optional[float], over_under_wager: Optional[float]):
+        user_id = interaction.user.id
+        params = f'{user_id}-{moneyline}-{moneyline_wager}-{puckline}-{puckline_wager}-{over_under}-{over_under_wager}'
+        response = get_response('placebet', params)
         await interaction.response.send_message(embed=response)
 
 async def setup(bot):
@@ -141,6 +156,16 @@ def initialize_economy():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
+    c.execute('''CREATE TABLE IF NOT EXISTS Current_Games (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            away_team TEXT NOT NULL,
+            home_team TEXT NOT NULL,
+            game_type INTEGER NOT NULL,
+            start_date DATE NOT NULL,
+            start_time TIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
     print("Database Synced")
@@ -148,8 +173,8 @@ def initialize_economy():
 @bot.event
 async def on_ready() -> None:
     initialize_economy()
-    print(f'{bot.user} is now running')
     await setup(bot)
+    print(f'{bot.user} is now running')
 
 def main() -> None:
     bot.run(TOKEN)

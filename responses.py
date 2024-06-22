@@ -1,9 +1,11 @@
+from datetime import date, datetime, timedelta
+import datetime
 import sqlite3
 import discord
 import nhlresponses
 from unidecode import unidecode
 
-def get_response(command: str, parameters: str, user_mention: str) -> discord.Embed:
+def get_response(command: str, parameters: str) -> discord.Embed:
     if command.startswith('help'):
         embed = discord.Embed(title = "Command List", color = discord.Color(0x6203fc))
         embed.add_field(name="playerstats", value="```Parameters: [firstName] [lastName] \nDisplays player stats```", inline=False)
@@ -134,12 +136,78 @@ SA - Shots Against\nGA - Goals Against\nSO - Shutouts\nA - Assists\nGAA - Goals 
         except Exception as e:
             print(e)
             return return_error()
+    elif command.startswith('placebet'):
+        try:
+            user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, over_under_wager = parameters.split('-')
+            moneyline = moneyline.upper()
+            moneyline_wager = float(moneyline_wager)
+            puckline = float(puckline) if puckline != 'None' else 0.0
+            puckline_wager = float(puckline_wager) if puckline_wager != 'None' else 0.0
+            over_under = float(over_under) if over_under != 'None' else 0.0
+            over_under_wager = float(over_under_wager) if over_under_wager != 'None' else 0.0
+
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+            current_time = datetime.datetime.now().time()
+            current_date = str(date.today())
+            c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (moneyline, moneyline, current_date))
+            game = c.fetchone()
+            if game is None:
+                embed = discord.Embed(title="Notice", color=discord.Color.yellow())
+                embed.add_field(name="", value="The team you selected is not playing today.", inline=False)
+                return embed
+            
+            game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
+            one_hour_before_start = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(hours=1)).time()
+
+            if current_time > one_hour_before_start:
+                embed = discord.Embed(title="Notice", color=discord.Color.yellow())
+                embed.add_field(name="", value="Bets for this game are closed.", inline=False)
+                return embed
+
+            c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
+            balance = c.fetchone()
+            if balance is None:
+                embed = discord.Embed(title="Error", color=discord.Color.yellow())
+                embed.add_field(name="", value="You are not registered in the economy. Use /register to register.", inline=False)
+            elif balance[0] < moneyline_wager + (puckline_wager if puckline_wager else 0) + (over_under_wager if over_under_wager else 0):
+                embed = discord.Embed(title="Error", color=discord.Color.red())
+                embed.add_field(name="", value="You do not have enough balance to place this bet.", inline=False)
+            elif moneyline_wager < 1 or moneyline_wager > 500:
+                embed = discord.Embed(title="Error", color=discord.Color.red())
+                embed.add_field(name="", value="Your money line wager between $1 and $500.", inline=False)
+            elif puckline and (puckline_wager < 1 or puckline_wager > 500):
+                embed = discord.Embed(title="Error", color=discord.Color.red())
+                embed.add_field(name="", value="Your puck line wager between $1 and $500.", inline=False)
+            elif over_under and (over_under_wager < 1 or over_under_wager > 500):
+                embed = discord.Embed(title="Error", color=discord.Color.red())
+                embed.add_field(name="", value="Your over/under wager between $1 and $500.", inline=False)
+            else:
+                c.execute('SELECT user_id FROM Betting_Pool WHERE user_id = ? AND game_id = ?', (user_id, game[1]))
+                user = c.fetchone()
+                if user:
+                    embed = discord.Embed(title="Error", color=discord.Color.yellow())
+                    embed.add_field(name="", value="You have already placed a bet on this game.", inline=False)
+                    return embed
+                game_id = game[1]
+                game_type = game[4]
+                c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (moneyline_wager, user_id))
+                c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, moneyline, moneyline_bet, puckline, puckline_bet, over_under, over_under_bet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                          (game_id, game_type, user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, over_under_wager))
+                conn.commit()
+
+                embed = discord.Embed(title="Success!", color=discord.Color.green())
+                embed.add_field(name="", value="Your bet has been placed.", inline=False)
+            return embed
+        except Exception as e:
+            print(e)
+            return return_error()
     else: 
         print(e)
         return return_error()
     
 def return_error() -> discord.Embed:
-    embed = discord.Embed(title = "Error", color = discord.Color.red())
-    embed.add_field(name="", value="Problem with your request. Check you parameters and retry the command", inline=False)
-    embed.set_footer(value="If your parameters are correct theres likely no results for your request. Alternatively, theres and issue with my code.")
+    embed = discord.Embed(title = 'Error', color = discord.Color.red())
+    embed.add_field(name="", value='Problem with your request. Check you parameters and retry the command', inline=False)
+    embed.set_footer(text='If your parameters are correct theres likely no results for your request. Alternatively, theres an issue with my code.')
     return embed

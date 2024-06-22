@@ -1,7 +1,8 @@
 import csv
+import datetime
+import sqlite3
 import discord
 import requests
-import datetime
 
 BASE_URL = 'https://api-web.nhle.com'
 
@@ -71,6 +72,33 @@ def get_current_season() -> int:
             last_row = row
     if last_row:
         return int(last_row[0])
+
+def get_weeks_games():
+    schedule = get_current_schedule()
+    for gameWeek in schedule['gameWeek']:
+        games_today = gameWeek['games']
+        for game in games_today:
+            game_id = game['id']
+            game_type = game['gameType']
+            away_team = game['awayTeam']['abbrev']
+            home_team = game['homeTeam']['abbrev']
+
+            dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
+            updated_datetime_obj = dt - datetime.timedelta(hours=4)
+
+            est_date = str(updated_datetime_obj.date())
+            est_time = str(updated_datetime_obj.time())
+
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+            c.execute("SELECT * FROM Current_Games WHERE game_id = ?", (game['id'],))
+            if c.fetchone() is None:
+                c.execute(
+                    "INSERT INTO Current_Games (game_id, game_type, away_team, home_team, start_date, start_time) VALUES (?, ?, ?, ?, ?, ?)",
+                    (game_id, game_type, away_team, home_team, est_date, est_time)
+                )
+                conn.commit()
+                conn.close()
 
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):
