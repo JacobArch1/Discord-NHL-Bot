@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Final, Optional
-from responses import get_response
+from parseresponses import get_response
 
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
