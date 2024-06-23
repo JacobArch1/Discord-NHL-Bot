@@ -202,10 +202,56 @@ SA - Shots Against\nGA - Goals Against\nSO - Shutouts\nA - Assists\nGAA - Goals 
         except Exception as e:
             print(e)
             return return_error()
+    elif command.startswith('mybets'):
+        try:
+            user_id = parameters
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+
+            c.execute('SELECT * FROM Betting_Pool WHERE user_id = ?', (user_id,))
+            bets = c.fetchall()
+            if not bets:
+                embed = discord.Embed(title="Notice", color=discord.Color.yellow())
+                embed.add_field(name="", value="You do not have any bets placed.", inline=False)
+            else:
+                embed = discord.Embed(title="My Bets", color=discord.Color.green())
+                for bet in bets:
+                    embed.add_field(name=f"Bet Id: {bet[0]}", value=f"Moneyline: [{bet[4]}]: ${bet[7]}\nPuckline: [{bet[5]}]: ${bet[8]}\nOver/Under: [{bet[6]}]: ${bet[9]}", inline=False)
+
+            conn.close()
+            return embed
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('removebet'):
+        try:
+            user_id, bet_id = parameters.split('-')
+            conn = sqlite3.connect('economy.db')
+            c = conn.cursor()
+
+            c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND user_id = ?', (bet_id, user_id))
+            bet = c.fetchone()
+            if bet is None:
+                embed = discord.Embed(title="Error", color=discord.Color.red())
+                embed.add_field(name="", value="Could not find bet.", inline=False)
+            else:
+                refund = bet[7] + bet[8] + bet[9]
+                c.execute('UPDATE Global_Economy SET balance = balance + ? WHERE user_id = ?', (refund, user_id))
+                c.execute('DELETE FROM Betting_Pool WHERE user_id = ?', (user_id,))
+                conn.commit()
+
+                embed = discord.Embed(title="Success!", color=discord.Color.green())
+                embed.add_field(name="", value="Your bet has been removed.", inline=False)
+
+            conn.close()
+            return embed
+        except Exception as e:
+            print(e)
+            return return_error()
     else: 
         print(e)
         return return_error()
-    
+
 def return_error() -> discord.Embed:
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
     embed.add_field(name="", value='Problem with your request. Check you parameters and retry the command', inline=False)

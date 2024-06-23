@@ -102,6 +102,20 @@ class Economy(commands.Cog):
         response = get_response('placebet', params)
         await interaction.response.send_message(embed=response)
 
+    @app_commands.command(name='mybets')
+    async def mybets_command(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        response = get_response('mybets', user_id)
+        await interaction.response.send_message(embed=response)
+
+    @app_commands.command(name='removebet')
+    @app_commands.describe(bet_id='Enter the bet ID to remove')
+    async def removebet_command(self, interaction: discord.Interaction, bet_id: int):
+        user_id = interaction.user.id
+        params = f'{user_id}-{bet_id}'
+        response = get_response('removebet', params)
+        await interaction.response.send_message(embed=response)
+
 async def setup(bot):
     if 'Commands' not in bot.cogs:
         await bot.add_cog(Commands(bot))
