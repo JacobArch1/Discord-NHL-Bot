@@ -73,7 +73,7 @@ class Economy(commands.Cog):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
         response = get_response('register', user_id)
-        await interaction.response.send_message(embed=response, ephemeral=True)
+        await interaction.response.send_message(content=user_mention, embed=response, ephemeral=True)
 
     @app_commands.command(name="bonus")
     async def bonus_command(self, interaction: discord.Interaction):
@@ -98,23 +98,26 @@ class Economy(commands.Cog):
     @app_commands.describe(over_under_wager='Place your wager for your over/under bet. Max $500, Min $1')
     async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, puckline: Optional[float], puckline_wager: Optional[float], over_under: Optional[float], over_under_wager: Optional[float]):
         user_id = interaction.user.id
+        user_mention = interaction.user.mention
         params = f'{user_id}-{moneyline}-{moneyline_wager}-{puckline}-{puckline_wager}-{over_under}-{over_under_wager}'
         response = get_response('placebet', params)
-        await interaction.response.send_message(embed=response)
+        await interaction.response.send_message(content=user_mention, embed=response)
 
     @app_commands.command(name='mybets')
     async def mybets_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
+        user_mention = interaction.user.mention
         response = get_response('mybets', user_id)
-        await interaction.response.send_message(embed=response)
+        await interaction.response.send_message(content=user_mention, embed=response)
 
     @app_commands.command(name='removebet')
     @app_commands.describe(bet_id='Enter the bet ID to remove')
     async def removebet_command(self, interaction: discord.Interaction, bet_id: int):
         user_id = interaction.user.id
+        user_mention = interaction.user.mention
         params = f'{user_id}-{bet_id}'
         response = get_response('removebet', params)
-        await interaction.response.send_message(embed=response)
+        await interaction.response.send_message(content=user_mention, embed=response)
 
 async def setup(bot):
     if 'Commands' not in bot.cogs:

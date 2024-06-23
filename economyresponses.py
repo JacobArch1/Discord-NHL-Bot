@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+import datetime
 import sqlite3
 import discord
 
@@ -41,7 +42,7 @@ def bonus(user_id: str) -> discord.Embed:
         embed.add_field(name="", value="You claimed your daily $50 bonus.", inline=False)
 
     conn.close()
-    return embed()
+    return embed
 
 def balance(user_id: str) -> discord.Embed:
     conn = sqlite3.connect('economy.db')

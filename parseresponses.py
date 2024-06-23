@@ -5,9 +5,9 @@ import otherresponses
 
 def get_response(command: str, parameters: str) -> discord.Embed:
     if command.startswith('help'):
-        return otherresponses.get_help()
+        return otherresponses.help()
     elif command.startswith('glossary'):
-        return otherresponses.get_glossary()
+        return otherresponses.glossary()
     elif command.startswith('playerstats'):
         try:
             first_name, last_name = parameters.split(' ')
