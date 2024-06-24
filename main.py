@@ -1,6 +1,9 @@
+import datetime
 import os
 import sqlite3
 import discord
+import asyncio
+import schedules
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -64,6 +67,12 @@ class Commands(commands.Cog):
         response = get_response('playoffbracket', None)
         await interaction.response.send_message(embed=response)
 
+    @app_commands.command(name="teamschedule")
+    @app_commands.describe(team="Enter the team you want the schedule for")
+    async def schedule_command(self, interaction: discord.Interaction, team: str):
+        response = get_response('schedule', team)
+        await interaction.response.send_message(embed=response)
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -119,6 +128,24 @@ class Economy(commands.Cog):
         response = get_response('removebet', params)
         await interaction.response.send_message(content=user_mention, embed=response)
 
+    @app_commands.command(name='leaderboard')
+    async def leaderboard_command(self, interaction: discord.Interaction):
+        response = get_response('leaderboard', None)
+        await interaction.response.send_message(embed=response)
+
+class Scheduled(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def reset():
+        while True:
+            now = datetime.datetime.now()
+            then = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            wait_time = (then - now).total_seconds()
+            await asyncio.sleep(wait_time)
+            schedules.get_weeks_games()
+            schedules.reset_bonus()
+
 async def setup(bot):
     if 'Commands' not in bot.cogs:
         await bot.add_cog(Commands(bot))
@@ -126,6 +153,9 @@ async def setup(bot):
     if 'Economy' not in bot.cogs:
         await bot.add_cog(Economy(bot))
         print("Economy Cog Synced")
+    if 'Scheduled' not in bot.cogs:
+        await bot.add_cog(Scheduled(bot))
+        print("Scheduled Cog Synced")
     await bot.tree.sync()
 
 def initialize_economy():

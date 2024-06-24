@@ -1,3 +1,4 @@
+import datetime
 import discord
 from collections import defaultdict
 import nhl
@@ -236,4 +237,28 @@ def get_playoff_bracket() -> discord.Embed:
         embed.add_field(name=f"Round {round_number}", value=table, inline=False)
          
     return embed
+
+def get_schedule(team: str) -> discord.Embed:
+    schedule = nhl.get_week_schedule_now(team)
+    embed = discord.Embed(color = discord.Color(int(nhl.teams_colors.get(team, "#FFFFFF").lstrip("#"), 16)))
+    if 'games' in schedule and not schedule['games']:
+        embed.add_field(name="No Games", value=f"There are no games scheduled for {team} this week")
+        return embed
     
+    table = ['```']
+
+    for game in schedule['games']:
+        venue = game['venue']['default']
+        dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
+        updated_datetime_obj = dt - datetime.timedelta(hours=4)
+        est_date = str(updated_datetime_obj.date())
+        est_time = str(updated_datetime_obj.time())
+        home_team = game['awayTeam']['abbrev']
+        away_team = game['homeTeam']['abbrev']
+
+        table.append(f'{away_team} @ {home_team} Arena:{venue} Date:{est_date} Time:{est_time} EST')
+    
+    table.append('```')
+    table = "\n".join(table)
+    embed.add_field(name=f'{team} Week Schedule', value=table, inline=False)
+    return embed

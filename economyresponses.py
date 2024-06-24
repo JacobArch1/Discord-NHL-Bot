@@ -152,3 +152,22 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
 
     conn.close()
     return embed
+
+def leaderboard() -> discord.Embed:
+    conn = sqlite3.connect('economy.db')
+    c = conn.cursor()
+    c.execute("SELECT user_id, balance FROM Global_Economy ORDER BY balance DESC")
+    leaderboard = c.fetchall()
+    embed = discord.Embed(title="Leaderboard", color=discord.Color.green())
+    table = [
+            "```",
+            f"{"Rank":<5}{"User":<25}{"Balance":>5}\n",
+        ]
+    for i in range(min(10, len(leaderboard))):
+        user_id, balance = leaderboard[i]
+        #username = client.fetch_user(user_id)
+        table.append(f"{i + 1:<5}{user_id:<25}{balance:>5}\n")
+    table.append("```")
+    embed.add_field(name="", value="".join(table), inline=False)
+    conn.close()
+    return embed

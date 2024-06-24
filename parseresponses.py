@@ -49,6 +49,13 @@ def get_response(command: str, parameters: str) -> discord.Embed:
         except Exception as e:
             print(e)
             return return_error()
+    elif command.startswith('schedule'):
+        try:
+            team = parameters
+            return nhlresponses.get_schedule(team)
+        except Exception as e:
+            print(e)
+            return return_error()
     elif command.startswith('register'):
         try:
             user_id = parameters
@@ -94,6 +101,12 @@ def get_response(command: str, parameters: str) -> discord.Embed:
         try:
             user_id, bet_id = parameters.split('-')
             return economyresponses.removebet(user_id, bet_id)
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('leaderboard'):
+        try:
+            return economyresponses.leaderboard()
         except Exception as e:
             print(e)
             return return_error()
