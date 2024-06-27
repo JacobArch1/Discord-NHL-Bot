@@ -49,10 +49,16 @@ def get_response(command: str, parameters: str) -> discord.Embed:
         except Exception as e:
             print(e)
             return return_error()
-    elif command.startswith('schedule'):
+    elif command.startswith('teamschedule'):
         try:
             team = parameters
-            return nhlresponses.get_schedule(team)
+            return nhlresponses.get_team_schedule(team)
+        except Exception as e:
+            print(e)
+            return return_error()
+    elif command.startswith('schedule'):
+        try:
+            return nhlresponses.get_league_schedule()
         except Exception as e:
             print(e)
             return return_error()

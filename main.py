@@ -67,10 +67,13 @@ class Commands(commands.Cog):
         response = get_response('playoffbracket', None)
         await interaction.response.send_message(embed=response)
 
-    @app_commands.command(name="teamschedule")
+    @app_commands.command(name="schedule")
     @app_commands.describe(team="Enter the team you want the schedule for")
-    async def schedule_command(self, interaction: discord.Interaction, team: str):
-        response = get_response('schedule', team)
+    async def schedule_command(self, interaction: discord.Interaction, team: Optional[str] = None):
+        if team:
+            response = get_response('teamschedule', team)
+        else:
+            response = get_response('schedule', None)
         await interaction.response.send_message(embed=response)
 
 class Economy(commands.Cog):
