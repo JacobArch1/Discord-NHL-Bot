@@ -275,16 +275,14 @@ def get_league_schedule() -> discord.Embed:
             if 'games' in games_today and not games_today['games']:
                 continue
             venue = game['venue']['default']
-            away_team = game['awayTeam']['abbrev']
-            home_team = game['homeTeam']['abbrev']
-
             dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
             updated_datetime_obj = dt - datetime.timedelta(hours=4)
+            est_date = str(updated_datetime_obj.strftime("%m/%d"))
+            est_time = str(updated_datetime_obj.strftime("%I:%M %p"))
+            home_team = game['awayTeam']['abbrev']
+            away_team = game['homeTeam']['abbrev']
 
-            est_date = str(updated_datetime_obj.date())
-            est_time = str(updated_datetime_obj.time())
-
-            table.append(f'{away_team} @ {home_team} Arena:{venue} Date:{est_date} Time:{est_time} EST')
+            table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] {venue}')
     if table == ['```']:
         embed.add_field(name=f'No Games This Week', value="")
         return embed

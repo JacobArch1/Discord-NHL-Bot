@@ -93,7 +93,7 @@ class Economy(commands.Cog):
         user_mention = interaction.user.mention
         response = get_response('bonus', user_id)
         await interaction.response.send_message(content= user_mention, embed=response)
-     
+    
     @app_commands.command(name="balance")
     async def balance_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
