@@ -81,8 +81,8 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     if "fullTeamName" in player_info:
         team_name = player_info["fullTeamName"].get("default", "Unknown Team")
     else:
-        team_name = "Not in the NHL"
-    embed.set_footer(text=f"{team_name}{"\nPID: " + str(player_info["playerId"])}")
+        team_name = "No NHL Team"
+    embed.set_footer(text=f"{team_name}{"PID: " + str(player_info["playerId"]):>50}")
     return embed
 
 def get_standings(season: str) -> discord.Embed:
