@@ -119,7 +119,7 @@ def get_standings(season: str) -> discord.Embed:
         table.append("```")
         formatted_table = "\n".join(table)
         embed.add_field(name=division, value=formatted_table[:1024], inline=False)
-        embed.set_footer(text=f"p - Clinched President\"s Trophy \nx - Clinched Playoff Spot \ny - Clinched Division \nz - Clinched Conference")
+        embed.set_footer(text=f"p - Clinched President\'s Trophy \nx - Clinched Playoff Spot \ny - Clinched Division \nz - Clinched Conference")
 
     return embed
 
