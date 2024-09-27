@@ -21,16 +21,6 @@ class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name='help')
-    async def help_command(self, interaction: discord.Interaction):
-        response = get_response('help', None)
-        await interaction.response.send_message(embed=response, ephemeral=True)
-
-    @app_commands.command(name='glossary')
-    async def glossary_command(self, interaction: discord.Interaction):
-        response = get_response('glossary', None)
-        await interaction.response.send_message(embed=response, ephemeral=True)
-
     @app_commands.command(name='playerstats')
     @app_commands.describe(player="Enter first and last name, capitalize each.")
     async def playerstats_command(self, interaction: discord.Interaction, player: str):

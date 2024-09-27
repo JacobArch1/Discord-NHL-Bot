@@ -1,14 +1,9 @@
 import discord
 import nhlresponses
 import economyresponses
-import otherresponses
 
 def get_response(command: str, parameters: str) -> discord.Embed:
-    if command.startswith('help'):
-        return otherresponses.help()
-    elif command.startswith('glossary'):
-        return otherresponses.glossary()
-    elif command.startswith('playerstats'):
+    if command.startswith('playerstats'):
         try:
             first_name, last_name = parameters.split(' ')
             return nhlresponses.get_player_stats(first_name, last_name)
