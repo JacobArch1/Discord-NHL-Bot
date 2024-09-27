@@ -265,7 +265,6 @@ def get_team_schedule(team: str) -> discord.Embed:
 
 def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
-    embed = discord.Embed(color=discord.Color(0xFFFFFF))
     for gameWeek in schedule['gameWeek']:
         games_today = gameWeek['games']
 
@@ -288,5 +287,6 @@ def get_league_schedule() -> discord.Embed:
         return embed
     table.append('```')
     table = "\n".join(table)
+    embed = discord.Embed(color=discord.Color(0xFFFFFF))
     embed.add_field(name=f'League Week Schedule', value=table, inline=False)
     return embed
