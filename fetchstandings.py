@@ -1,14 +1,15 @@
 import sqlite3
 import time
 import pandas as pd
-from nhl import get_standings_for_each_season
+import nhl
 
 def fetch_standings():
     conn = sqlite3.connect('standings.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM standings")
     try:
         time.sleep(0.1)
-        create_standings_table(conn)
-        results = get_standings_for_each_season()
+        results = nhl.get_standings_for_each_season()
         if 'error' in results:
             print(f'Error fetching standings: {results["error"]}')
         else:
@@ -19,15 +20,6 @@ def fetch_standings():
         convert_to_csv()
         print('Standings fetched and saved successfully')
         conn.close()
-
-def create_standings_table(conn):
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS standings (
-                    id INTEGER PRIMARY KEY, 
-                    startDate TEXT, 
-                    endDate TEXT
-                )''')
-    conn.commit()
 
 def insert_standings(conn, seasons):
     try:
@@ -61,5 +53,4 @@ def convert_to_csv():
     finally:
         conn.close()
 
-# Execute the function
 fetch_standings()

@@ -1,7 +1,7 @@
-import nhl
 import time
 import sqlite3
 import pandas as pd
+import nhl
 
 def fetch_players(season: int):
     conn = sqlite3.connect('players.db')
@@ -28,6 +28,7 @@ def fetch_players(season: int):
     finally:
         convert()
         conn.close()
+        print("All Players Fetched! :)")
 
 def extract_player_info(players):
     extracted_info = []
@@ -62,7 +63,3 @@ def convert():
         table_name = table_name[0]
         df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
         df.to_csv(f"{table_name}.csv", index=False)
-
-if __name__ == '__main__':
-    fetch_players()
-    print("All Players Fetched! :)")

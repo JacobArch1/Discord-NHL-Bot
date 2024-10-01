@@ -265,13 +265,12 @@ def get_team_schedule(team: str) -> discord.Embed:
 
 def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
-    for gameWeek in schedule['gameWeek']:
-        games_today = gameWeek['games']
-
+    game_week = schedule['gameWeek']
+    for game in game_week:
         table = ['```']
 
-        for game in games_today:
-            if 'games' in games_today and not games_today['games']:
+        for game in game_week['games']:
+            if 'games' in game_week and not game_week['games']:
                 continue
             venue = game['venue']['default']
             dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")

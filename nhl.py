@@ -17,16 +17,16 @@ oldteams = {'AFM', 'ATL', 'BRK', 'CGS', 'CLE', 'CLR', 'DCG', 'DFL', 'HAM', 'HFD'
 
 #Team Colors
 teams_colors = { 'ANA': '#F47A38', 'ARI': '#8C2633', 'BOS': '#FFB81C', 'BUF': '#003087', 'CAR': '#CE1126', 
-                'CBJ': '#002654', 'CGY': '#D2001C', 'CHI': '#CF0A2C', 'COL': '#6F263D', 'DAL': '#006847', 
-                'DET': '#ce1126', 'EDM': '#041E42', 'FLA': '#041E42', 'LAK': '#111111', 'MIN': '#A6192E', 
-                'MTL': '#AF1E2D','NJD': '#CE1126', 'NSH': '#FFB81C', 'NYI': '#00539b', 'NYR': '#0038A8', 
-                'OTT': '#000000', 'PHI': '#F74902', 'PIT': '#000000', 'SEA': '#001628','SJS': '#006D75', 
-                'STL': '#002F87', 'TBL': '#002868', 'TOR': '#00205b', 'VAN': '#00205B', 'VGK': '#B4975A', 
-                'WPG': '#041E42', 'WSH': '#041E42'}
+                 'CBJ': '#002654', 'CGY': '#D2001C', 'CHI': '#CF0A2C', 'COL': '#6F263D', 'DAL': '#006847', 
+                 'DET': '#ce1126', 'EDM': '#041E42', 'FLA': '#041E42', 'LAK': '#111111', 'MIN': '#A6192E', 
+                 'MTL': '#AF1E2D', 'NJD': '#CE1126', 'NSH': '#FFB81C', 'NYI': '#00539b', 'NYR': '#0038A8', 
+                 'OTT': '#000000', 'PHI': '#F74902', 'PIT': '#000000', 'SEA': '#001628', 'SJS': '#006D75', 
+                 'STL': '#002F87', 'TBL': '#002868', 'TOR': '#00205b', 'VAN': '#00205B', 'VGK': '#B4975A', 
+                 'WPG': '#041E42', 'WSH': '#041E42'}
 
 def get_player_id(first_name: str, last_name: str) -> int:
     players = []
-    with open('playerslist/players.csv', 'r') as file:
+    with open('players.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             if first_name in row[1] and last_name in row[2]:
@@ -43,7 +43,7 @@ def get_player_id(first_name: str, last_name: str) -> int:
     return embed
 
 def get_standings_end(season: str) -> str:
-    with open('standingslist/standings.csv', 'r') as file:
+    with open('standings.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             if season in row[0]:
@@ -65,7 +65,7 @@ def get_team_name(team: str) -> str:
 
 def get_current_season() -> int:
     last_row = None
-    with open('standingslist/standings.csv', 'r') as file:
+    with open('standings.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
             last_row = row
