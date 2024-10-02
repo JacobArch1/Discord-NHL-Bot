@@ -10,7 +10,7 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     player_info = nhl.get_specific_player_info(player_id)
     if "careerTotals" not in player_info:
         embed = discord.Embed(color=discord.Color.lighter_grey())
-        embed.add_field(value="No stats available for this player", inline=False)
+        embed.add_field(name = "", value="No stats available for this player", inline=False)
         return embed
     
     if "regularSeason" in player_info["careerTotals"]:
@@ -61,7 +61,7 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
             ("S%:", round(regular_season_stats.get("shootingPctg", 0) * 100, 1), round(playoffs_stats.get("shootingPctg", 0) * 100, 1), False),
             ("FO%:", round(regular_season_stats.get("faceoffWinningPctg", 0) * 100, 1), round(playoffs_stats.get("faceoffWinningPctg", 0) * 100, 1), False)
         ]
-    
+    print("5")
     for stat, regular_season, playoffs, add in stats:
         if add:
             total = regular_season + playoffs
@@ -71,6 +71,7 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
 
     table.append("```")
     formatted_table = "\n".join(table)
+    print("6")
 
     embed = discord.Embed(
         title=f"{player_info["firstName"]["default"]} {player_info["lastName"]["default"]}",
