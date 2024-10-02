@@ -60,8 +60,8 @@ def get_response(command: str, parameters: str) -> discord.Embed:
             return return_error()
     elif command.startswith('register'):
         try:
-            user_id = parameters
-            return economyresponses.register(user_id)
+            user_id, user_name = parameters.split(' ')
+            return economyresponses.register(user_id, user_name)
         except Exception as e:
             log_error(command, parameters, e)
             return return_error()
@@ -120,9 +120,8 @@ def log_error(command: str, parameters: str, e: str):
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime(f'%Y-%m-%d %H:%M:%S')
     log_entry = f"Error occured using command {command} with parameters: {parameters}, ERR: {e} | AT: {timestamp}\n"
-    with open('errorlog.txt', 'a') as file:
+    with open('./logs/errorlog.txt', 'a') as file:
         file.write(log_entry)
-
 
 def return_error() -> discord.Embed:
     embed = discord.Embed(title = 'Error', color = discord.Color.red())

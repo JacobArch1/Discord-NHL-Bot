@@ -3,7 +3,7 @@ import datetime
 import sqlite3
 import discord
 
-def register(user_id: str) -> discord.Embed:
+def register(user_id: str, user_name: str) -> discord.Embed:
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
     c.execute('SELECT * FROM Global_Economy WHERE user_id = ?', (user_id,))
@@ -12,7 +12,7 @@ def register(user_id: str) -> discord.Embed:
         embed = discord.Embed(title = "Error", color = discord.Color.red())
         embed.add_field(name="", value="You are already registered.", inline=False)
     else:
-        c.execute('INSERT INTO Global_Economy (user_id, balance) VALUES (?, ?)', (user_id, 100))
+        c.execute('INSERT INTO Global_Economy (user_id, balance, user_name) VALUES (?, ?, ?)', (user_id, 100, user_name))
         embed = discord.Embed(title = "Registered!", color = discord.Color.green())
         embed.add_field(name="", value="You have succesfully registered to the global economy.", inline=False)
         conn.commit()
@@ -156,7 +156,7 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
 def leaderboard() -> discord.Embed:
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
-    c.execute("SELECT user_id, balance FROM Global_Economy ORDER BY balance DESC")
+    c.execute("SELECT user_name, balance FROM Global_Economy ORDER BY balance DESC")
     leaderboard = c.fetchall()
     embed = discord.Embed(title="Leaderboard", color=discord.Color.green())
     table = [
@@ -164,9 +164,8 @@ def leaderboard() -> discord.Embed:
             f"{"Rank":<5}{"User":<25}{"Balance":>5}\n",
         ]
     for i in range(min(10, len(leaderboard))):
-        user_id, balance = leaderboard[i]
-        #username = client.fetch_user(user_id)
-        table.append(f"{i + 1:<5}{user_id:<25}{balance:>5}\n")
+        user_name, balance = leaderboard[i]
+        table.append(f"{i + 1:<5}{user_name:<25}{balance:>5}\n")
     table.append("```")
     embed.add_field(name="", value="".join(table), inline=False)
     conn.close()

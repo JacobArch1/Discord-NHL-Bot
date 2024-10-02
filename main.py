@@ -71,10 +71,13 @@ class Economy(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="register")
-    async def register_command(self, interaction: discord.Interaction):
+    @app_commands.describe(username="Enter the name you want people to see on the leaderboard. Min 3 Characters, Max 25 Characters")
+    async def register_command(self, interaction: discord.Interaction, username: str):
         user_id = interaction.user.id
+        user_name = username
+        params = f"{user_id} {user_name}"
         user_mention = interaction.user.mention
-        response = get_response('register', user_id)
+        response = get_response('register', params)
         await interaction.response.send_message(content=user_mention, embed=response, ephemeral=True)
 
     @app_commands.command(name="bonus")
@@ -129,15 +132,28 @@ class Economy(commands.Cog):
 class Scheduled(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.reset_bonuses())
+        self.bot.loop.create_task(self.check_game_over())
 
-    async def reset():
+    async def reset_bonuses(self):
         while True:
             now = datetime.datetime.now()
-            then = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            then = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
             wait_time = (then - now).total_seconds()
             await asyncio.sleep(wait_time)
             schedules.get_weeks_games()
             schedules.reset_bonus()
+
+    async def check_game_over(self):
+        while True:
+            now = datetime.datetime.now()
+            start_time = now.replace(hour=19, minute=0, second=0, microsecond=0)
+            end_time = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+            if start_time <= now < end_time:
+                schedules.check_game_end()
+                
+            await asyncio.sleep(5 * 60)
 
 async def setup(bot):
     if 'Commands' not in bot.cogs:
@@ -157,6 +173,7 @@ def initialize_economy():
     c.execute('''CREATE TABLE IF NOT EXISTS Global_Economy (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL UNIQUE,
+            user_name TEXT NOT NULL,
             balance REAL NOT NULL DEFAULT 0.0,
             bonus INTEGER NOT NULL DEFAULT 0,
             num_bets INTEGER NOT NULL DEFAULT 0,
