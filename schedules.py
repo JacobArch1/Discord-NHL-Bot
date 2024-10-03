@@ -2,7 +2,7 @@ import nhl
 import datetime
 import sqlite3
 
-def get_weeks_games():
+def get_todays_games():
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
     c.execute('DELETE FROM Current_Games')
@@ -47,7 +47,63 @@ def reset_bonus():
 def check_game_ended():
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
-    c.execute()
+    c.execute("SELECT game_id FROM Current_Games")
+    games_list = c.fetchall()
     
+    for game in games_list:
+        game_id = game[0]
+        results = nhl.get_boxscore(game_id)
+        
+        state = results["gameState"]
+        if state == "FINAL":
+            cashout(results, game_id)
+    conn.commit()
+    conn.close()
 
-#At the end of the season we need to run fetchplayers.py and fetch standings.py 
+def cashout(results: str, game_id: id):
+    conn = sqlite3.connect('economy.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM Betting_Pool WHERE game_id == ?", (game_id))
+    bets = c.fetchall()
+
+    home_score = results["homeTeam"]["score"]
+    away_score = results["awayTeam"]["score"]
+
+    if home_score > away_score:
+        money_line_winner = results["homeTeam"]["abbrev"]
+    else:
+        money_line_winner = results["awayTeam"]["abbrev"]
+    
+    total_score = home_score + away_score
+
+    for bet in bets:
+        user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, greater_or_less, over_under_wager = bet
+        c = conn.cursor()
+        c.execute("SELECT balance FROM Global_Economy WHERE user_id = ?", (user_id))
+        balance_row = c.fetchone()
+        balance = balance_row[0]
+
+        if moneyline_wager > 0:
+            moneyline_bet_won = (moneyline == money_line_winner)
+            if moneyline_bet_won:
+                balance += moneyline_wager
+        
+        if puckline_wager > 0:
+            if puckline > 0:
+                puckline_bet_won = (away_score + puckline > home_score)
+            else:
+                puckline_bet_won = (away_score - abs(puckline) > home_score)
+            if puckline_bet_won:
+                balance += puckline_wager
+
+        if over_under_wager > 0:
+            if greater_or_less == '>':
+                over_under_bet_won = (total_score > over_under)
+            elif greater_or_less == '<':
+                over_under_bet_won = (total_score < over_under)
+            if over_under_bet_won:
+                balance += over_under_wager
+
+        c.execute("UPDATE Global_Economy SET balance = ? WHERE user_id = ?", (balance, user_id))
+    conn.commit()
+    conn.close()

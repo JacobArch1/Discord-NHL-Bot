@@ -99,12 +99,13 @@ class Economy(commands.Cog):
     @app_commands.describe(moneyline_wager='Place your wager for your money line bet. Max $500, Min $1')
     @app_commands.describe(puckline='Bet on what the score difference will be. Must be a float of .5')
     @app_commands.describe(puckline_wager='Place your wager for your puck line bet. Max $500, Min $1')
-    @app_commands.describe(over_under='Bet on the total score of the game. Must be a float of .5')
+    @app_commands.describe(over_under='Bet on whether the score will be over or under a specified number. Must be a float of .5')
+    @app_commands.describe(greater_or_less='Will the score be more or less than the number you just specified? (\'>\': For Greater Than | \'<\': For Less Than)')
     @app_commands.describe(over_under_wager='Place your wager for your over/under bet. Max $500, Min $1')
-    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, puckline: Optional[float], puckline_wager: Optional[float], over_under: Optional[float], over_under_wager: Optional[float]):
+    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, puckline: Optional[float], puckline_wager: Optional[float], over_under: Optional[str], greater_or_less: Optional[str], over_under_wager: Optional[float]):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
-        params = f'{user_id}-{moneyline}-{moneyline_wager}-{puckline}-{puckline_wager}-{over_under}-{over_under_wager}'
+        params = f'{user_id}|{moneyline}|{moneyline_wager}|{puckline}|{puckline_wager}|{over_under}|{greater_or_less}|{over_under_wager}'
         response = get_response('placebet', params)
         await interaction.response.send_message(content=user_mention, embed=response)
 
@@ -141,7 +142,7 @@ class Scheduled(commands.Cog):
             then = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
             wait_time = (then - now).total_seconds()
             await asyncio.sleep(wait_time)
-            schedules.get_weeks_games()
+            schedules.get_todays_games()
             schedules.reset_bonus()
 
     async def check_game_over(self):
@@ -151,7 +152,7 @@ class Scheduled(commands.Cog):
             end_time = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
             if start_time <= now < end_time:
-                schedules.check_game_end()
+                schedules.check_game_ended()
                 
             await asyncio.sleep(5 * 60)
 
@@ -186,6 +187,7 @@ def initialize_economy():
             game_type INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
             moneyline TEXT NOT NULL,
+            greater_less TEXT NOT NULL,
             puckline REAL,
             over_under REAL,
             moneyline_bet REAL,

@@ -266,27 +266,26 @@ def get_team_schedule(team: str) -> discord.Embed:
 
 def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
-    game_week = schedule['gameWeek']
-    for game in game_week:
-        table = ['```']
+    games_today = schedule['gameWeek'][0]['games']
+    table = ['```']
+    for game in games_today:
+        away_team = game['awayTeam']['abbrev']
+        home_team = game['homeTeam']['abbrev']
+        venue = game['venue']['default']
+        home_team = game['awayTeam']['abbrev']
+        away_team = game['homeTeam']['abbrev']
 
-        for game in game_week['games']:
-            if 'games' in game_week and not game_week['games']:
-                continue
-            venue = game['venue']['default']
-            dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
-            updated_datetime_obj = dt - datetime.timedelta(hours=4)
-            est_date = str(updated_datetime_obj.strftime("%m/%d"))
-            est_time = str(updated_datetime_obj.strftime("%I:%M %p"))
-            home_team = game['awayTeam']['abbrev']
-            away_team = game['homeTeam']['abbrev']
-
-            table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] {venue}')
+        dt = datetime.datetime.strptime(game['startTimeUTC'], "%Y-%m-%dT%H:%M:%SZ")
+        updated_datetime_obj = dt - datetime.timedelta(hours=4)
+        est_date = str(updated_datetime_obj.strftime("%m/%d"))
+        est_time = str(updated_datetime_obj.strftime("%I:%M %p"))
+        
+        table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] {venue}')
     if table == ['```']:
-        embed.add_field(name=f'No Games This Week', value="")
+        embed.add_field(name=f'No Games Scheduled Today', value="")
         return embed
     table.append('```')
     table = "\n".join(table)
     embed = discord.Embed(color=discord.Color(0xFFFFFF))
-    embed.add_field(name=f'League Week Schedule', value=table, inline=False)
+    embed.add_field(name=f'Today\'s Games', value=table, inline=False)
     return embed
