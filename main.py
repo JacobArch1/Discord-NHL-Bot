@@ -97,15 +97,13 @@ class Economy(commands.Cog):
     @app_commands.command(name='placebet')
     @app_commands.describe(moneyline='Bet on which team will win. Use the three letter abbreviation')
     @app_commands.describe(moneyline_wager='Place your wager for your money line bet. Max $500, Min $1')
-    @app_commands.describe(puckline='Bet on what the score difference will be. Must be a float of .5')
-    @app_commands.describe(puckline_wager='Place your wager for your puck line bet. Max $500, Min $1')
     @app_commands.describe(over_under='Bet on whether the score will be over or under a specified number. Must be a float of .5')
     @app_commands.describe(greater_or_less='Will the score be more or less than the number you just specified? (\'>\': For Greater Than | \'<\': For Less Than)')
     @app_commands.describe(over_under_wager='Place your wager for your over/under bet. Max $500, Min $1')
-    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, puckline: Optional[float], puckline_wager: Optional[float], over_under: Optional[str], greater_or_less: Optional[str], over_under_wager: Optional[float]):
+    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, over_under: Optional[str], greater_or_less: Optional[str], over_under_wager: Optional[float]):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
-        params = f'{user_id}|{moneyline}|{moneyline_wager}|{puckline}|{puckline_wager}|{over_under}|{greater_or_less}|{over_under_wager}'
+        params = f'{user_id}|{moneyline}|{moneyline_wager}|{over_under}|{greater_or_less}|{over_under_wager}'
         response = get_response('placebet', params)
         await interaction.response.send_message(content=user_mention, embed=response)
 
@@ -188,10 +186,8 @@ def initialize_economy():
             user_id INTEGER NOT NULL,
             moneyline TEXT NOT NULL,
             greater_less TEXT NOT NULL,
-            puckline REAL,
             over_under REAL,
             moneyline_bet REAL,
-            puckline_bet REAL,
             over_under_bet REAL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -202,15 +198,12 @@ def initialize_economy():
             game_type INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
             moneyline TEXT NOT NULL,
-            puckline REAL,
             over_under REAL,
             moneyline_bet REAL,
-            puckline_bet REAL,
             over_under_bet REAL,
             total_bet REAL NOT NULL,
             payout REAL,
             moneyline_win BOOLEAN,
-            puckline_win BOOLEAN,
             over_under_win BOOLEAN,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

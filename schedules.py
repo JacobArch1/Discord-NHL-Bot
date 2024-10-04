@@ -1,3 +1,4 @@
+import json
 import nhl
 import datetime
 import sqlite3
@@ -60,10 +61,11 @@ def check_game_ended():
     conn.commit()
     conn.close()
 
-def cashout(results: str, game_id: id):
+def cashout(results: str, game_id: int):
+    results = json.loads(results)
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM Betting_Pool WHERE game_id == ?", (game_id))
+    c.execute("SELECT * FROM Betting_Pool WHERE game_id == ?", (game_id,))
     bets = c.fetchall()
 
     home_score = results["homeTeam"]["score"]
@@ -73,13 +75,19 @@ def cashout(results: str, game_id: id):
         money_line_winner = results["homeTeam"]["abbrev"]
     else:
         money_line_winner = results["awayTeam"]["abbrev"]
-    
+
     total_score = home_score + away_score
 
     for bet in bets:
-        user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, greater_or_less, over_under_wager = bet
+        user_id = bet[3]
+        moneyline = bet[4] 
+        moneyline_wager = bet[8] 
+        over_under = bet[6] 
+        greater_or_less = bet[5] 
+        over_under_wager = bet[8]
+
         c = conn.cursor()
-        c.execute("SELECT balance FROM Global_Economy WHERE user_id = ?", (user_id))
+        c.execute("SELECT balance FROM Global_Economy WHERE user_id = ?", (user_id, ))
         balance_row = c.fetchone()
         balance = balance_row[0]
 
@@ -87,14 +95,6 @@ def cashout(results: str, game_id: id):
             moneyline_bet_won = (moneyline == money_line_winner)
             if moneyline_bet_won:
                 balance += moneyline_wager
-        
-        if puckline_wager > 0:
-            if puckline > 0:
-                puckline_bet_won = (away_score + puckline > home_score)
-            else:
-                puckline_bet_won = (away_score - abs(puckline) > home_score)
-            if puckline_bet_won:
-                balance += puckline_wager
 
         if over_under_wager > 0:
             if greater_or_less == '>':

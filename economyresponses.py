@@ -60,7 +60,7 @@ def balance(user_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, moneyline: str, moneyline_wager: float, puckline: float, puckline_wager: float, over_under: float, greater_or_less: str, over_under_wager: float) -> discord.Embed:
+def placebet(user_id: int, moneyline: str, moneyline_wager: float, over_under: float, greater_or_less: str, over_under_wager: float) -> discord.Embed:
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
@@ -90,15 +90,12 @@ def placebet(user_id: int, moneyline: str, moneyline_wager: float, puckline: flo
     if balance is None:
         embed = discord.Embed(title="Error", color=discord.Color.yellow())
         embed.add_field(name="", value="You are not registered in the economy. Use /register to register.", inline=False)
-    elif balance[0] < moneyline_wager + (puckline_wager if puckline_wager else 0) + (over_under_wager if over_under_wager else 0):
+    elif balance[0] < moneyline_wager + (over_under_wager if over_under_wager else 0):
         embed = discord.Embed(title="Error", color=discord.Color.red())
         embed.add_field(name="", value="You do not have enough balance to place this bet.", inline=False)
     elif moneyline_wager < 1 or moneyline_wager > 500:
         embed = discord.Embed(title="Error", color=discord.Color.red())
         embed.add_field(name="", value="Your money line wager must be between $1 and $500.", inline=False)
-    elif puckline and (puckline_wager < 1 or puckline_wager > 500):
-        embed = discord.Embed(title="Error", color=discord.Color.red())
-        embed.add_field(name="", value="Your puck line wager must be between $1 and $500.", inline=False)
     elif over_under and (over_under_wager < 1 or over_under_wager > 500):
         embed = discord.Embed(title="Error", color=discord.Color.red())
         embed.add_field(name="", value="Your over/under wager must be between $1 and $500.", inline=False)
@@ -111,9 +108,9 @@ def placebet(user_id: int, moneyline: str, moneyline_wager: float, puckline: flo
             return embed
         game_id = game[1]
         game_type = game[4]
-        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (moneyline_wager + (puckline_wager if puckline_wager else 0) + (over_under_wager if over_under_wager else 0), user_id))
-        c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, moneyline, greater_less, moneyline_bet, puckline, puckline_bet, over_under, over_under_bet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                    (game_id, game_type, user_id, moneyline, greater_or_less, moneyline_wager, puckline, puckline_wager, over_under, over_under_wager))
+        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (moneyline_wager + (over_under_wager if over_under_wager else 0), user_id))
+        c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, moneyline, greater_less, moneyline_bet, over_under, over_under_bet) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+                    (game_id, game_type, user_id, moneyline, greater_or_less, moneyline_wager, over_under, over_under_wager))
         conn.commit()
 
         embed = discord.Embed(title="Success!", color=discord.Color.green())
@@ -132,7 +129,7 @@ def mybets(user_id: int) -> discord.Embed:
     else:
         embed = discord.Embed(title="My Bets", color=discord.Color.green())
         for bet in bets:
-            embed.add_field(name=f"Bet Id: {bet[0]}", value=f"Moneyline: [{bet[4]}]: ${bet[8]}\nPuckline: [{bet[6]}]: ${bet[9]}\nOver/Under: [{bet[5]}{bet[7]}]: ${bet[10]}", inline=False)
+            embed.add_field(name=f"Bet Id: {bet[0]}", value=f"Moneyline: [{bet[4]}]: ${bet[7]}\nOver/Under: [{bet[5]}{bet[6]}]: ${bet[8]}", inline=False)
 
     conn.close()
     return embed

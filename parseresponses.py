@@ -81,15 +81,13 @@ def get_response(command: str, parameters: str) -> discord.Embed:
             return return_error()
     elif command.startswith('placebet'):
         try:
-            user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, greater_or_less, over_under_wager = parameters.split('|')
+            user_id, moneyline, moneyline_wager, over_under, greater_or_less, over_under_wager = parameters.split('|')
             moneyline = moneyline.upper()
             moneyline_wager = float(moneyline_wager)
-            puckline = float(puckline) if puckline != 'None' else 0.0
-            puckline_wager = float(puckline_wager) if puckline_wager != 'None' else 0.0
             over_under = float(over_under) if over_under != 'None' else 0.0
             greater_or_less if greater_or_less in ['>', '<'] else None
             over_under_wager = float(over_under_wager) if over_under_wager != 'None' else 0.0
-            return economyresponses.placebet(user_id, moneyline, moneyline_wager, puckline, puckline_wager, over_under, greater_or_less, over_under_wager)
+            return economyresponses.placebet(user_id, moneyline, moneyline_wager, over_under, greater_or_less, over_under_wager)
         except Exception as e:
             log_error(command, parameters, e)
             return return_error()
