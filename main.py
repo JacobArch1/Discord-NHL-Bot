@@ -15,20 +15,20 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @app_commands.command(name='playerstats')
-    @app_commands.describe(player="Enter first and last name, capitalize each.")
+    @app_commands.describe(player='Enter first and last name, capitalize each.')
     async def playerstats_command(self, interaction: discord.Interaction, player: str):
         response = get_response('playerstats', player)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='standings')
-    @app_commands.describe(season="Get standings by year. Format: YYYY-YYYY")
+    @app_commands.describe(season='Get standings by year. Format: YYYY-YYYY')
     async def standings_command(self, interaction: discord.Interaction, season: Optional[str] = None):
         if season:
             response = get_response('standings', season)
@@ -37,28 +37,28 @@ class Commands(commands.Cog):
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='leaders')
-    @app_commands.describe(position="Skater or goalie")
-    @app_commands.describe(category="Use /glossary for list of categories")
+    @app_commands.describe(position='Skater or goalie')
+    @app_commands.describe(category='Use /glossary for list of categories')
     async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
         params = f'{position} {category}'
         response = get_response('leaders', params)
         await interaction.response.send_message(embed=response)
     
-    @app_commands.command(name="teamroster")
-    @app_commands.describe(team="Enter the team you want the roster for")
-    @app_commands.describe(season="Get team roster by year. Format: YYYY-YYYY")
+    @app_commands.command(name='teamroster')
+    @app_commands.describe(team='Enter the team you want the roster for')
+    @app_commands.describe(season='Get team roster by year. Format: YYYY-YYYY')
     async def teamroster_command(self, interaction: discord.Interaction, team: str, season: Optional[str] = 'current'):
         params = f'{team} {season}'
         response = get_response('teamroster', params)
         await interaction.response.send_message(embed=response)
 
-    @app_commands.command(name="playoffbracket")
+    @app_commands.command(name='playoffbracket')
     async def playoffbracket_command(self, interaction: discord.Interaction):
         response = get_response('playoffbracket', None)
         await interaction.response.send_message(embed=response)
 
-    @app_commands.command(name="schedule")
-    @app_commands.describe(team="Enter the team you want the schedule for")
+    @app_commands.command(name='schedule')
+    @app_commands.describe(team='Enter the team you want the schedule for')
     async def schedule_command(self, interaction: discord.Interaction, team: Optional[str] = None):
         if team:
             response = get_response('teamschedule', team)
@@ -70,24 +70,24 @@ class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="register")
-    @app_commands.describe(username="Enter the name you want people to see on the leaderboard. Min 3 Characters, Max 25 Characters")
+    @app_commands.command(name='register')
+    @app_commands.describe(username='Enter the name you want people to see on the leaderboard. Min 3 Characters, Max 25 Characters')
     async def register_command(self, interaction: discord.Interaction, username: str):
         user_id = interaction.user.id
         user_name = username
-        params = f"{user_id} {user_name}"
+        params = f'{user_id} {user_name}'
         user_mention = interaction.user.mention
         response = get_response('register', params)
         await interaction.response.send_message(content=user_mention, embed=response, ephemeral=True)
 
-    @app_commands.command(name="bonus")
+    @app_commands.command(name='bonus')
     async def bonus_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
         response = get_response('bonus', user_id)
         await interaction.response.send_message(content= user_mention, embed=response)
     
-    @app_commands.command(name="balance")
+    @app_commands.command(name='balance')
     async def balance_command(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
@@ -157,13 +157,13 @@ class Scheduled(commands.Cog):
 async def setup(bot):
     if 'Commands' not in bot.cogs:
         await bot.add_cog(Commands(bot))
-        print("Commands Cog Synced")
+        print('Commands Cog Synced')
     if 'Economy' not in bot.cogs:
         await bot.add_cog(Economy(bot))
-        print("Economy Cog Synced")
+        print('Economy Cog Synced')
     if 'Scheduled' not in bot.cogs:
         await bot.add_cog(Scheduled(bot))
-        print("Scheduled Cog Synced")
+        print('Scheduled Cog Synced')
     await bot.tree.sync()
 
 def initialize_economy():
@@ -220,7 +220,7 @@ def initialize_economy():
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
-    print("Database Synced")
+    print('Database Synced')
 
 @bot.event
 async def on_ready() -> None:

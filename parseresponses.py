@@ -118,12 +118,12 @@ def get_response(command: str, parameters: str) -> discord.Embed:
 def log_error(command: str, parameters: str, e: str):
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime(f'%Y-%m-%d %H:%M:%S')
-    log_entry = f"Error occured using command {command} with parameters: {parameters}, ERR: {e} | AT: {timestamp}\n"
+    log_entry = f'Error occured using command {command} with parameters: {parameters}, ERR: {e} | AT: {timestamp}\n'
     with open('./logs/errorlog.txt', 'a') as file:
         file.write(log_entry)
 
 def return_error() -> discord.Embed:
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
-    embed.add_field(name="", value='Problem with your request. Check you parameters and retry the command', inline=False)
+    embed.add_field(name='', value='Problem with your request. Check you parameters and retry the command', inline=False)
     embed.set_footer(text='If your parameters are correct theres likely no results for your request. Alternatively, theres an issue with my code.')
     return embed
