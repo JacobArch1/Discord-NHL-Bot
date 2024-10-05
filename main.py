@@ -95,15 +95,12 @@ class Economy(commands.Cog):
         await interaction.response.send_message(content= user_mention, embed=response)
 
     @app_commands.command(name='placebet')
-    @app_commands.describe(moneyline='Bet on which team will win. Use the three letter abbreviation')
-    @app_commands.describe(moneyline_wager='Place your wager for your money line bet. Max $500, Min $1')
-    @app_commands.describe(over_under='Bet on whether the score will be over or under a specified number. Must be a float of .5')
-    @app_commands.describe(greater_or_less='Will the score be more or less than the number you just specified? (\'>\': For Greater Than | \'<\': For Less Than)')
-    @app_commands.describe(over_under_wager='Place your wager for your over/under bet. Max $500, Min $1')
-    async def bet_command(self, interaction: discord.Interaction, moneyline: str, moneyline_wager: float, over_under: Optional[str], greater_or_less: Optional[str], over_under_wager: Optional[float]):
+    @app_commands.describe(team='Bet on which team will win. Use the three letter abbreviation')
+    @app_commands.describe(wager='Place your wager. Max $500, Min $1')
+    async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
         user_id = interaction.user.id
         user_mention = interaction.user.mention
-        params = f'{user_id}|{moneyline}|{moneyline_wager}|{over_under}|{greater_or_less}|{over_under_wager}'
+        params = f'{user_id} {team} {wager}'
         response = get_response('placebet', params)
         await interaction.response.send_message(content=user_mention, embed=response)
 
@@ -137,7 +134,7 @@ class Scheduled(commands.Cog):
     async def reset_bonuses(self):
         while True:
             now = datetime.datetime.now()
-            then = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            then = now.replace(hour=23, minute=59, second=59, microsecond=59)
             wait_time = (then - now).total_seconds()
             await asyncio.sleep(wait_time)
             schedules.get_todays_games()
@@ -147,12 +144,15 @@ class Scheduled(commands.Cog):
         while True:
             now = datetime.datetime.now()
             start_time = now.replace(hour=19, minute=0, second=0, microsecond=0)
-            end_time = (now + datetime.timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            if now.hour < 2:
+                start_time = (now - datetime.timedelta(days=1)).replace(hour=19, minute=0, second=0, microsecond=0)
+
+            end_time = start_time + datetime.timedelta(hours=7)
 
             if start_time <= now < end_time:
                 schedules.check_game_ended()
                 
-            await asyncio.sleep(5 * 60)
+            await asyncio.sleep(1 * 60)
 
 async def setup(bot):
     if 'Commands' not in bot.cogs:
@@ -184,11 +184,8 @@ def initialize_economy():
             game_id INTEGER NOT NULL,
             game_type INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
-            moneyline TEXT NOT NULL,
-            greater_less TEXT NOT NULL,
-            over_under REAL,
-            moneyline_bet REAL,
-            over_under_bet REAL,
+            team TEXT NOT NULL,
+            wager REAL NOT NULL DEFAULT 0.0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
@@ -197,14 +194,10 @@ def initialize_economy():
             game_id INTEGER NOT NULL,
             game_type INTEGER NOT NULL,
             user_id INTEGER NOT NULL,
-            moneyline TEXT NOT NULL,
-            over_under REAL,
-            moneyline_bet REAL,
-            over_under_bet REAL,
-            total_bet REAL NOT NULL,
+            team TEXT NOT NULL,
+            wager REAL,
             payout REAL,
             moneyline_win BOOLEAN,
-            over_under_win BOOLEAN,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')

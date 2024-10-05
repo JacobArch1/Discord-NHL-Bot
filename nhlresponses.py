@@ -254,8 +254,8 @@ def get_team_schedule(team: str) -> discord.Embed:
         updated_datetime_obj = dt - datetime.timedelta(hours=4)
         est_date = str(updated_datetime_obj.strftime('%m/%d'))
         est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
-        home_team = game['awayTeam']['abbrev']
-        away_team = game['homeTeam']['abbrev']
+        home_team = game['homeTeam']['abbrev']
+        away_team = game['awayTeam']['abbrev']
 
         table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] Arena: {venue}')
     

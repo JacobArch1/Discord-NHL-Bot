@@ -60,27 +60,22 @@ def balance(user_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, moneyline: str, moneyline_wager: float, over_under: float, greater_or_less: str, over_under_wager: float) -> discord.Embed:
+def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
     current_date = str(date.today())
-    c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (moneyline, moneyline, current_date))
+    c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (team, team, current_date))
     game = c.fetchone()
+    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
+    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
+
     if game is None:
         embed = discord.Embed(title='Notice', color=discord.Color.yellow())
         embed.add_field(name='', value='The team you selected is not playing today.', inline=False)
         return embed
     
-    if over_under_wager > 0 and greater_or_less not in ['>', '<']:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='Error with your greater or less than flag.', inline=False)
-        return embed
-    
-    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
-    one_hour_before_start = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(hours=1)).time()
-
-    if current_time > one_hour_before_start:
+    if current_time > close_time:
         embed = discord.Embed(title='Notice', color=discord.Color.yellow())
         embed.add_field(name='', value='Bets for this game are closed.', inline=False)
         return embed
@@ -90,15 +85,12 @@ def placebet(user_id: int, moneyline: str, moneyline_wager: float, over_under: f
     if balance is None:
         embed = discord.Embed(title='Error', color=discord.Color.yellow())
         embed.add_field(name='', value='You are not registered in the economy. Use /register to register.', inline=False)
-    elif balance[0] < moneyline_wager + (over_under_wager if over_under_wager else 0):
+    elif balance[0] < wager:
         embed = discord.Embed(title='Error', color=discord.Color.red())
         embed.add_field(name='', value='You do not have enough balance to place this bet.', inline=False)
-    elif moneyline_wager < 1 or moneyline_wager > 500:
+    elif wager < 1 or wager > 500:
         embed = discord.Embed(title='Error', color=discord.Color.red())
         embed.add_field(name='', value='Your money line wager must be between $1 and $500.', inline=False)
-    elif over_under and (over_under_wager < 1 or over_under_wager > 500):
-        embed = discord.Embed(title='Error', color=discord.Color.red())
-        embed.add_field(name='', value='Your over/under wager must be between $1 and $500.', inline=False)
     else:
         c.execute('SELECT user_id FROM Betting_Pool WHERE user_id = ? AND game_id = ?', (user_id, game[1]))
         user = c.fetchone()
@@ -108,9 +100,8 @@ def placebet(user_id: int, moneyline: str, moneyline_wager: float, over_under: f
             return embed
         game_id = game[1]
         game_type = game[4]
-        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (moneyline_wager + (over_under_wager if over_under_wager else 0), user_id))
-        c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, moneyline, greater_less, moneyline_bet, over_under, over_under_bet) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-                    (game_id, game_type, user_id, moneyline, greater_or_less, moneyline_wager, over_under, over_under_wager))
+        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (wager, user_id))
+        c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, team, wager) VALUES (?, ?, ?, ?, ?)', (game_id, game_type, user_id, team, wager))
         conn.commit()
 
         embed = discord.Embed(title='Success!', color=discord.Color.green())
@@ -129,7 +120,7 @@ def mybets(user_id: int) -> discord.Embed:
     else:
         embed = discord.Embed(title='My Bets', color=discord.Color.green())
         for bet in bets:
-            embed.add_field(name=f'Bet Id: {bet[0]}', value=f'Moneyline: [{bet[4]}]: ${bet[7]}\nOver/Under: [{bet[5]}{bet[6]}]: ${bet[8]}', inline=False)
+            embed.add_field(name=f'Bet Id: {bet[0]}', value=f'Moneyline: {bet[4]}: ${bet[5]}', inline=False)
 
     conn.close()
     return embed
@@ -140,11 +131,23 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
 
     c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND user_id = ?', (bet_id, user_id))
     bet = c.fetchone()
+    game_id = bet[1]
+
+    c.execute('SELECT * FROM Current_Games WHERE game_id = ?', (game_id,))
+    game = c.fetchone()
+    
+    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
+    one_hour_before_start = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(hours=1)).time()
+    current_time = datetime.datetime.now().time()
+
     if bet is None:
         embed = discord.Embed(title='Error', color=discord.Color.red())
         embed.add_field(name='', value='Could not find bet.', inline=False)
+    elif current_time > one_hour_before_start:
+        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
+        embed.add_field(name='', value='Betting for this game is closed. Cannot remove bet.')
     else:
-        refund = bet[8] + bet[9] + bet[10]
+        refund = bet[5]
         c.execute('UPDATE Global_Economy SET balance = balance + ? WHERE user_id = ?', (refund, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE user_id = ?', (user_id,))
         conn.commit()

@@ -76,10 +76,10 @@ def get_current_season() -> int:
 def connect_endpoint(endpoint: str):
     url = BASE_URL + endpoint
     response = requests.get(url)
-    log_data(url, response.status_code)
     if response.status_code == 200:
         return response.json(), None
     else:
+        log_data(url, response.status_code)
         return None, response.status_code
 
 def get_data(category: str, params: dict):
