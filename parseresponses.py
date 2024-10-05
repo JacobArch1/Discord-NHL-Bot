@@ -58,6 +58,13 @@ def get_response(command: str, parameters: str) -> discord.Embed:
         except Exception as e:
             log_error(command, parameters, e)
             return return_error()
+    elif command.startswith('score'):
+        try:
+            team = parameters
+            return nhlresponses.get_live_score(team)
+        except Exception as e:
+            log_error(command, parameters, e)
+            return return_error()
     elif command.startswith('register'):
         try:
             user_id, user_name = parameters.split(' ')

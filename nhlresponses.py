@@ -270,8 +270,6 @@ def get_league_schedule() -> discord.Embed:
         away_team = game['awayTeam']['abbrev']
         home_team = game['homeTeam']['abbrev']
         venue = game['venue']['default']
-        home_team = game['awayTeam']['abbrev']
-        away_team = game['homeTeam']['abbrev']
 
         dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
         updated_datetime_obj = dt - datetime.timedelta(hours=4)
@@ -286,4 +284,45 @@ def get_league_schedule() -> discord.Embed:
     table = '\n'.join(table)
     embed = discord.Embed(color=discord.Color(0xFFFFFF))
     embed.add_field(name=f'Today\'s Games', value=table, inline=False)
+    return embed
+
+def get_live_score(team: str) -> discord.Embed:
+    results = nhl.get_team_scoreboard(team)
+    games = results['gamesByDate']
+    now = datetime.datetime.now()
+    today = now.strftime('%Y-%m-%d')
+
+    for game in games:
+        date = game['date']
+        game_state = game['games'][0]['gameState']
+
+        if game_state == 'LIVE' or date == today:
+            game_id = game['games'][0]['id']
+            scoreboard = nhl.get_boxscore(game_id)
+            break
+
+    if scoreboard is None:
+        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
+        embed.add_field(name='', value='This team is not playing today.')
+        return embed
+    
+    time_remaining = scoreboard['clock']['timeRemaining']
+    period = scoreboard['periodDescriptor']['number']
+    away_team = scoreboard['awayTeam']['abbrev']
+    home_team = scoreboard['homeTeam']['abbrev']
+    away_score = scoreboard['awayTeam']['score']
+    home_score = scoreboard['homeTeam']['score']
+    game_state = scoreboard['gameState']
+
+    if game_state == 'LIVE':
+        color = discord.Color.green()
+    elif game_state == 'FINAL' or game_state == 'OFF':
+        winner = away_team if away_score > home_score else home_team
+        color = int(nhl.teams_colors.get(winner, '#FFFFFF').lstrip('#'), 16)
+    else:
+        color = discord.Color.dark_gray()
+    
+    embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
+    embed.add_field(name='', value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```')
+    embed.set_footer(text=f'{game_state}')
     return embed

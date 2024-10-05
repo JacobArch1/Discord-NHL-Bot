@@ -66,6 +66,12 @@ class Commands(commands.Cog):
             response = get_response('schedule', None)
         await interaction.response.send_message(embed=response)
 
+    @app_commands.command(name='score')
+    @app_commands.describe(team='Enter the team you want to see the live scoreboard for')
+    async def score_command(self, interaction: discord.Interaction, team: str):
+        response = get_response('score', team)
+        await interaction.response.send_message(embed=response)
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
