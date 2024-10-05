@@ -61,7 +61,6 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
             ('S%:', round(regular_season_stats.get('shootingPctg', 0) * 100, 1), round(playoffs_stats.get('shootingPctg', 0) * 100, 1), False),
             ('FO%:', round(regular_season_stats.get('faceoffWinningPctg', 0) * 100, 1), round(playoffs_stats.get('faceoffWinningPctg', 0) * 100, 1), False)
         ]
-    print('5')
     for stat, regular_season, playoffs, add in stats:
         if add:
             total = regular_season + playoffs
@@ -71,7 +70,6 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
 
     table.append('```')
     formatted_table = '\n'.join(table)
-    print('6')
 
     embed = discord.Embed(
         title=f'{player_info['firstName']['default']} {player_info['lastName']['default']}',
