@@ -39,7 +39,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
     c.execute('SELECT * FROM Betting_Pool WHERE game_id == ?', (game_id,))
     bets = c.fetchall()
 
-    multiplier = game_type + -0.75
+    multiplier = game_type + .25
 
     home_score = results['homeTeam']['score']
     away_score = results['awayTeam']['score']
