@@ -307,11 +307,11 @@ def get_live_score(team: str) -> discord.Embed:
         return embed
     
     time_remaining = scoreboard['clock']['timeRemaining']
-    period = scoreboard['periodDescriptor']['number']
+    period = scoreboard.get('periodDescriptor', {}).get('number', 0)
     away_team = scoreboard['awayTeam']['abbrev']
     home_team = scoreboard['homeTeam']['abbrev']
-    away_score = scoreboard['awayTeam']['score']
-    home_score = scoreboard['homeTeam']['score']
+    away_score = scoreboard['awayTeam'].get('score', 0)
+    home_score = scoreboard['homeTeam'].get('score', 0)
     game_state = scoreboard['gameState']
 
     if game_state == 'LIVE':
