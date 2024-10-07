@@ -66,7 +66,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
 
         c.execute('UPDATE Global_Economy SET balance = ? WHERE user_id = ?', (balance, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
-        conn.commit()
+    conn.commit()
 
 def get_todays_games(conn):
     c = conn.cursor()
@@ -92,7 +92,11 @@ def get_todays_games(conn):
                 'INSERT INTO Current_Games (game_id, game_type, away_team, home_team, start_date, start_time) VALUES (?, ?, ?, ?, ?, ?)',
                 (game_id, game_type, away_team, home_team, est_date, est_time)
             )
-            conn.commit()
-    log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
+
+    if games_today is None:
+        log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
+    else:
+        log_entry = f'No games today, Database cleared at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
     with open('./logs/schedulelog.txt', 'a') as file:
         file.write(log_entry)
+    conn.commit()

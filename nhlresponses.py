@@ -312,7 +312,6 @@ def get_live_score(team: str) -> discord.Embed:
     home_team = scoreboard['homeTeam']['abbrev']
     away_score = scoreboard['awayTeam'].get('score', 0)
     home_score = scoreboard['homeTeam'].get('score', 0)
-    game_state = scoreboard['gameState']
 
     if game_state == 'LIVE':
         color = discord.Color.green()
@@ -324,5 +323,5 @@ def get_live_score(team: str) -> discord.Embed:
     
     embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
     embed.add_field(name='', value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```')
-    embed.set_footer(text=f'{game_state}')
+    embed.set_footer(text=f'{scoreboard['gameState']}')
     return embed
