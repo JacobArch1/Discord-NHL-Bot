@@ -3,119 +3,62 @@ import nhlresponses
 import economyresponses
 import datetime
 
-def get_response(command: str, parameters: str) -> discord.Embed:
-    if command.startswith('playerstats'):
-        try:
+def get_response(command: str, parameters: list[str]) -> discord.Embed:
+    try:
+        if command.startswith('playerstats'):
             first_name, last_name = parameters.split(' ')
             return nhlresponses.get_player_stats(first_name, last_name)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('currentstandings'):
-        try:
+        elif command.startswith('currentstandings'):
             return nhlresponses.get_standings('')
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('standings'):
-        try:
+        elif command.startswith('standings'):
             season = parameters.replace('-', '')
             return nhlresponses.get_standings(season)  
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('leaders'):
-        try:
-            position, category = parameters.split(' ')
+        elif command.startswith('leaders'):
+            position = parameters[0]
+            category = parameters[1]
             return nhlresponses.get_leaders(position, category)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('teamroster'):
-        try:
-            team, season = parameters.split(' ')
+        elif command.startswith('teamroster'):
+            team = parameters[0]
+            season = parameters[1]
             season = season.replace('-', '')
             return nhlresponses.get_team_roster(team, season)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('playoffbracket'):
-        try:
+        elif command.startswith('playoffbracket'):
             return nhlresponses.get_playoff_bracket()
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('teamschedule'):
-        try:
+        elif command.startswith('teamschedule'):
             team = parameters
             return nhlresponses.get_team_schedule(team)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('schedule'):
-        try:
+        elif command.startswith('schedule'):
             return nhlresponses.get_league_schedule()
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('score'):
-        try:
+        elif command.startswith('score'):
             team = parameters
             return nhlresponses.get_live_score(team)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('register'):
-        try:
-            user_id, user_name = parameters.split(' ')
+        elif command.startswith('register'):
+            user_id = parameters[0]
+            user_name = parameters[1]
             return economyresponses.register(user_id, user_name)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('bonus'):
-        try:
+        elif command.startswith('bonus'):
             user_id = parameters
             return economyresponses.bonus(user_id)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('balance'):
-        try:
+        elif command.startswith('balance'):
             user_id = parameters
             return economyresponses.balance(user_id)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('placebet'):
-        try:
-            user_id, team, wager = parameters.split(' ')
-            team = team.upper()
-            wager = float(wager)
+        elif command.startswith('placebet'):
+            user_id = parameters[0]
+            team = parameters[1].upper()
+            wager = float(parameters[2])
             return economyresponses.placebet(user_id, team, wager)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('mybets'):
-        try:
+        elif command.startswith('mybets'):
             user_id = parameters
             return economyresponses.mybets(user_id)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('removebet'):
-        try:
-            user_id, bet_id = parameters.split('-')
+        elif command.startswith('removebet'):
+            user_id = parameters[0]
+            bet_id = parameters[1]
             return economyresponses.removebet(user_id, bet_id)
-        except Exception as e:
-            log_error(command, parameters, e)
-            return return_error()
-    elif command.startswith('leaderboard'):
-        try:
+        elif command.startswith('leaderboard'):
             return economyresponses.leaderboard()
-        except Exception as e:
-            log_error(command, parameters, e)
+        else: 
             return return_error()
-    else: 
+    except Exception as e:
         log_error(command, parameters, e)
         return return_error()
     
@@ -129,5 +72,5 @@ def log_error(command: str, parameters: str, e: str):
 def return_error() -> discord.Embed:
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
     embed.add_field(name='', value='Problem with your request. Check you parameters and retry the command', inline=False)
-    embed.set_footer(text='If your parameters are correct theres likely no results for your request. Alternatively, theres an issue with my code.')
+    embed.set_footer(text='If your parameters are correct theres likely no results for your request. If this is a code issue, the error has been logged.')
     return embed

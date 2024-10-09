@@ -40,7 +40,7 @@ class Commands(commands.Cog):
     @app_commands.describe(position='Skater or goalie')
     @app_commands.describe(category='Use /glossary for list of categories')
     async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
-        params = f'{position} {category}'
+        params = [position, category]
         response = get_response('leaders', params)
         await interaction.response.send_message(embed=response)
     
@@ -48,7 +48,7 @@ class Commands(commands.Cog):
     @app_commands.describe(team='Enter the team you want the roster for')
     @app_commands.describe(season='Get team roster by year. Format: YYYY-YYYY')
     async def teamroster_command(self, interaction: discord.Interaction, team: str, season: Optional[str] = 'current'):
-        params = f'{team} {season}'
+        params = [team, season]
         response = get_response('teamroster', params)
         await interaction.response.send_message(embed=response)
 
@@ -79,57 +79,57 @@ class Economy(commands.Cog):
     @app_commands.command(name='register')
     @app_commands.describe(username='Enter the name you want people to see on the leaderboard. Min 3 Characters, Max 25 Characters')
     async def register_command(self, interaction: discord.Interaction, username: str):
-        user_id = interaction.user.id
-        user_name = username
-        params = f'{user_id} {user_name}'
-        user_mention = interaction.user.mention
+        params = [interaction.user.id, username]
         response = get_response('register', params)
-        await interaction.response.send_message(content=user_mention, embed=response, ephemeral=True)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response, ephemeral=True)
 
     @app_commands.command(name='bonus')
     async def bonus_command(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_mention = interaction.user.mention
-        response = get_response('bonus', user_id)
-        await interaction.response.send_message(content= user_mention, embed=response)
+        response = get_response('bonus', interaction.user.id)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response)
     
     @app_commands.command(name='balance')
     async def balance_command(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_mention = interaction.user.mention
-        response = get_response('balance', user_id)
-        await interaction.response.send_message(content= user_mention, embed=response)
+        response = get_response('balance', interaction.user.id)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='placebet')
     @app_commands.describe(team='Bet on which team will win. Use the three letter abbreviation')
     @app_commands.describe(wager='Place your wager. Max $500, Min $1')
     async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
-        user_id = interaction.user.id
-        user_mention = interaction.user.mention
-        params = f'{user_id} {team} {wager}'
+        params = [interaction.user.id, team, wager]
         response = get_response('placebet', params)
-        await interaction.response.send_message(content=user_mention, embed=response)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='mybets')
     async def mybets_command(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        user_mention = interaction.user.mention
-        response = get_response('mybets', user_id)
-        await interaction.response.send_message(content=user_mention, embed=response)
+        response = get_response('mybets', interaction.user.id)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='removebet')
     @app_commands.describe(bet_id='Enter the bet ID to remove')
     async def removebet_command(self, interaction: discord.Interaction, bet_id: int):
-        user_id = interaction.user.id
-        user_mention = interaction.user.mention
-        params = f'{user_id}-{bet_id}'
+        params = [interaction.user.id, bet_id]
         response = get_response('removebet', params)
-        await interaction.response.send_message(content=user_mention, embed=response)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='leaderboard')
     async def leaderboard_command(self, interaction: discord.Interaction):
         response = get_response('leaderboard', None)
         await interaction.response.send_message(embed=response)
+
+class Casino(commands.Cog):
+    def __init__(self):
+        self.bot = bot
+
+    @app_commands.command(name='slots')
+    @app_commands.describe(wager='Enter your wager')
+    async def slots(self, interaction:discord.Interaction, wager: int):
+        user_id = interaction.user.id
+        params = f'{user_id}-{wager}'
+        response = get_response('slots', params)
+        await interaction.response.send_message(embed=response)
+
 
 class Scheduled(commands.Cog):
     def __init__(self, bot):
@@ -163,60 +163,21 @@ class Scheduled(commands.Cog):
 async def setup(bot):
     if 'Commands' not in bot.cogs:
         await bot.add_cog(Commands(bot))
-        print('Commands Cog Synced')
     if 'Economy' not in bot.cogs:
         await bot.add_cog(Economy(bot))
-        print('Economy Cog Synced')
     if 'Scheduled' not in bot.cogs:
         await bot.add_cog(Scheduled(bot))
-        print('Scheduled Cog Synced')
+    print('Cogs Synced')
     await bot.tree.sync()
 
 def initialize_economy():
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS Global_Economy (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL UNIQUE,
-            user_name TEXT NOT NULL,
-            balance REAL NOT NULL DEFAULT 0.0,
-            bonus INTEGER NOT NULL DEFAULT 0,
-            num_bets INTEGER NOT NULL DEFAULT 0,
-            num_wins INTEGER NOT NULL DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS Betting_Pool (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            game_id INTEGER NOT NULL,
-            game_type INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            team TEXT NOT NULL,
-            wager REAL NOT NULL DEFAULT 0.0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
-    c.execute('''CREATE TABLE IF NOT EXISTS Bet_History (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            game_id INTEGER NOT NULL,
-            game_type INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            team TEXT NOT NULL,
-            wager REAL,
-            payout REAL,
-            moneyline_win BOOLEAN,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES Global_Economy(user_id))''')
-    c.execute('''CREATE TABLE IF NOT EXISTS Current_Games (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            game_id INTEGER NOT NULL,
-            away_team TEXT NOT NULL,
-            home_team TEXT NOT NULL,
-            game_type INTEGER NOT NULL,
-            start_date DATE NOT NULL,
-            start_time TIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    
+    with open('tables.sql', 'r') as f:
+        script = f.read()
+    c.executescript(script)
+
     conn.commit()
     conn.close()
     print('Database Synced')

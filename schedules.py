@@ -100,3 +100,7 @@ def get_todays_games(conn):
     with open('./logs/schedulelog.txt', 'a') as file:
         file.write(log_entry)
     conn.commit()
+
+#Manual Commands
+#get_todays_games(conn = sqlite3.connect('economy.db'))
+#reset_bonus()
