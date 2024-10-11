@@ -4,6 +4,7 @@ import sqlite3
 import discord
 import asyncio
 import schedules
+import time
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -85,17 +86,17 @@ class Economy(commands.Cog):
 
     @app_commands.command(name='bonus')
     async def bonus_command(self, interaction: discord.Interaction):
-        response = get_response('bonus', interaction.user.id)
+        response = get_response('bonus', [interaction.user.id])
         await interaction.response.send_message(content=interaction.user.mention, embed=response)
     
     @app_commands.command(name='balance')
     async def balance_command(self, interaction: discord.Interaction):
-        response = get_response('balance', interaction.user.id)
+        response = get_response('balance', [interaction.user.id])
         await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='placebet')
     @app_commands.describe(team='Bet on which team will win. Use the three letter abbreviation')
-    @app_commands.describe(wager='Place your wager. Max $500, Min $1')
+    @app_commands.describe(wager='Place your wager. Minimum $1')
     async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
         params = [interaction.user.id, team, wager]
         response = get_response('placebet', params)
@@ -103,7 +104,7 @@ class Economy(commands.Cog):
 
     @app_commands.command(name='mybets')
     async def mybets_command(self, interaction: discord.Interaction):
-        response = get_response('mybets', interaction.user.id)
+        response = get_response('mybets', [interaction.user.id])
         await interaction.response.send_message(content=interaction.user.mention, embed=response)
 
     @app_commands.command(name='removebet')
@@ -119,17 +120,40 @@ class Economy(commands.Cog):
         await interaction.response.send_message(embed=response)
 
 class Casino(commands.Cog):
-    def __init__(self):
+    def __init__(self, bot):
         self.bot = bot
+        self.cooldowns = {}
 
     @app_commands.command(name='slots')
-    @app_commands.describe(wager='Enter your wager')
-    async def slots(self, interaction:discord.Interaction, wager: int):
+    @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
+    async def slots(self, interaction:discord.Interaction, wager: float):
         user_id = interaction.user.id
-        params = f'{user_id}-{wager}'
+        if await self.check_cooldown(interaction, user_id):
+            return
+        params = [interaction.user.id, wager]
         response = get_response('slots', params)
         await interaction.response.send_message(embed=response)
 
+    @app_commands.command(name='coinflip')
+    @app_commands.describe(side='H or T')
+    @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
+    async def coinflip(self, interaction:discord.Interaction, side: str, wager: float):
+        user_id = interaction.user.id
+        if await self.check_cooldown(interaction, user_id):
+            return
+        params = [interaction.user.id, side, wager]
+        response = get_response('coinflip', params)
+        await interaction.response.send_message(embed=response)
+    
+    async def check_cooldown(self, interaction:discord.Interaction, user_id: int):
+        current_time = time.time()
+        if user_id in self.cooldowns and current_time < self.cooldowns[user_id]:
+            remaining_time = round(self.cooldowns[user_id] - current_time, 1)
+            embed = discord.Embed(title='Slow Down', description=f'Please wait {remaining_time} seconds', color=discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return True
+        self.cooldowns[user_id] = current_time + 5
+        return False
 
 class Scheduled(commands.Cog):
     def __init__(self, bot):
@@ -167,10 +191,12 @@ async def setup(bot):
         await bot.add_cog(Economy(bot))
     if 'Scheduled' not in bot.cogs:
         await bot.add_cog(Scheduled(bot))
+    if 'Casino' not in bot.cogs:
+        await bot.add_cog(Casino(bot))
     print('Cogs Synced')
     await bot.tree.sync()
 
-def initialize_economy():
+async def initialize_economy():
     conn = sqlite3.connect('economy.db')
     c = conn.cursor()
     
@@ -184,7 +210,7 @@ def initialize_economy():
 
 @bot.event
 async def on_ready() -> None:
-    initialize_economy()
+    await initialize_economy()
     await setup(bot)
     print(f'{bot.user} is now running')
 

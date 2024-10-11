@@ -1,6 +1,7 @@
 import discord
 import nhlresponses
 import economyresponses
+import casinoresponses
 import datetime
 
 def get_response(command: str, parameters: list[str]) -> discord.Embed:
@@ -19,8 +20,7 @@ def get_response(command: str, parameters: list[str]) -> discord.Embed:
             return nhlresponses.get_leaders(position, category)
         elif command.startswith('teamroster'):
             team = parameters[0]
-            season = parameters[1]
-            season = season.replace('-', '')
+            season = parameters[1].replace('-', '')
             return nhlresponses.get_team_roster(team, season)
         elif command.startswith('playoffbracket'):
             return nhlresponses.get_playoff_bracket()
@@ -37,10 +37,10 @@ def get_response(command: str, parameters: list[str]) -> discord.Embed:
             user_name = parameters[1]
             return economyresponses.register(user_id, user_name)
         elif command.startswith('bonus'):
-            user_id = parameters
+            user_id = parameters[0]
             return economyresponses.bonus(user_id)
         elif command.startswith('balance'):
-            user_id = parameters
+            user_id = parameters[0]
             return economyresponses.balance(user_id)
         elif command.startswith('placebet'):
             user_id = parameters[0]
@@ -52,11 +52,20 @@ def get_response(command: str, parameters: list[str]) -> discord.Embed:
             return economyresponses.mybets(user_id)
         elif command.startswith('removebet'):
             user_id = parameters[0]
-            bet_id = parameters[1]
+            bet_id = float(parameters[1])
             return economyresponses.removebet(user_id, bet_id)
         elif command.startswith('leaderboard'):
             return economyresponses.leaderboard()
-        else: 
+        elif command.startswith('slots'):
+            user_id = parameters[0]
+            wager = float(parameters[1])
+            return casinoresponses.slots(user_id, wager)
+        elif command.startswith('coinflip'):
+            user_id = parameters[0]
+            side = parameters[1]
+            wager = float(parameters[2])
+            return casinoresponses.coinflip(user_id, side, wager)
+        else:
             return return_error()
     except Exception as e:
         log_error(command, parameters, e)

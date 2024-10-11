@@ -34,12 +34,12 @@ def bonus(user_id: str) -> discord.Embed:
         embed = discord.Embed(title='Notice', color=discord.Color.yellow())
         embed.add_field(name='', value='Your bonus has already been claimed.', inline=False)
     else:
-        bonus_amount = 50
+        bonus_amount = 500
         c.execute('UPDATE Global_Economy SET bonus = 1, balance = balance + ? WHERE user_id = ?', (bonus_amount, user_id))
         conn.commit()
 
         embed = discord.Embed(title='Claimed!', color=discord.Color.green())
-        embed.add_field(name='', value='You claimed your daily $50 bonus.', inline=False)
+        embed.add_field(name='', value=f'You claimed your daily ${bonus_amount} bonus.', inline=False)
 
     conn.close()
     return embed
