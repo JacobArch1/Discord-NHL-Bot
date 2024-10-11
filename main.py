@@ -5,7 +5,6 @@ import discord
 import asyncio
 import schedules
 import time
-import webserver
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -219,5 +218,4 @@ def main() -> None:
     bot.run(TOKEN)
 
 if __name__ == '__main__':
-    webserver.keep_alive()
     main()
