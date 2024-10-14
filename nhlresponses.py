@@ -306,7 +306,7 @@ def get_live_score(team: str) -> discord.Embed:
         embed.add_field(name='', value='This team is not playing today.')
         return embed
     
-    time_remaining = scoreboard['clock']['timeRemaining']
+    time_remaining = scoreboard.get('clock', {}).get('timeRemaining', 0)
     period = scoreboard.get('periodDescriptor', {}).get('number', 0)
     away_team = scoreboard['awayTeam']['abbrev']
     home_team = scoreboard['homeTeam']['abbrev']
@@ -324,4 +324,96 @@ def get_live_score(team: str) -> discord.Embed:
     embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
     embed.add_field(name='', value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```')
     embed.set_footer(text=f'{scoreboard['gameState']}')
+    return embed
+
+def get_game_story(team: str, date: str) -> discord.Embed:
+    results = nhl.get_team_scoreboard(team)
+    games = results['gamesByDate']
+    game_id = 0
+
+    for game in games:
+        game_date = game['date']
+        game_state = game['games'][0]['gameState']
+
+        if date in game_date and game_state in ['OFF','FINAL']:
+            game_id = game['games'][0]['id']
+            break
+    
+    if game_id == 0:
+        embed = discord.Embed(color=discord.Color.lighter_gray())
+        embed.add_field(name='', value='Game could not be found.', inline=False)
+        return embed
+    
+    game_story = nhl.get_game_story(game_id)
+    home_team_name = (f'{game_story['homeTeam']['placeName']['default']} {game_story['homeTeam']['name']['default']}')
+    away_team_name = (f'{game_story['awayTeam']['placeName']['default']} {game_story['awayTeam']['name']['default']}')
+    venue = (f'{game_story['venue']['default']}, {game_story['venueLocation']['default']}')
+    game_date = game_story['gameDate']
+    title = (f'{away_team_name} @ {home_team_name} ({game_date})\n{venue}')
+
+    home_score = game_story['homeTeam']['score']
+    away_score = game_story['awayTeam']['score']
+    winner = (f'{home_team_name} Victory') if home_score > away_score else (f'{away_team_name} Victory')
+    message = (f'Score: {home_score}-{away_score} {winner}')
+
+    goal_highlights = game_story['summary']['scoring']
+    table = ['']
+    for period in goal_highlights:
+        descriptor = period['periodDescriptor']['number']
+        period_num = (
+            '1st' if descriptor == 1 else
+            '2nd' if descriptor == 2 else
+            '3rd' if descriptor == 3 else
+            f'{descriptor}th')
+        table.append(f'\n{period_num} Period')
+        goals = period['goals']
+        if not goals:
+            table.append(f'No goals scored in this period.')
+        for goal in goals:
+            scoring_team = goal['teamAbbrev']['default']
+            goal_scorer = goal['name']['default']
+            tog = goal['timeInPeriod']
+            strength = goal['strength']
+            assister = goal['assists'][0]['name']['default']
+            video = goal.get('highlightClipSharingUrl', '[No Video]')
+            if strength != 'ev':
+                strength = strength.upper()
+            else:
+                strength = ''
+            table.append(f'[{scoring_team} {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})')
+    table.append('')
+    table = '\n'.join(table)
+    embed = discord.Embed(title=title, color=discord.Color.light_gray())
+    embed.add_field(name='Goal Highlights', value=(f'{message}{table}'), inline=False)
+
+    home_team_abbr = game_story['homeTeam']['abbrev']
+    away_team_abbr = game_story['awayTeam']['abbrev']
+    team_stats = game_story['summary']['teamGameStats']
+    table = [
+        '```',
+        f'{'STAT':<16}{f'{home_team_abbr}':>30}{f'{away_team_abbr}':>5}\n',
+    ]
+    desired_stats = {'sog': 'SOG', 'powerPlay': 'POWER PLAY GOALS', 'pim': 'PENALTY MINUTES', 'hits': 'HITS', 
+                     'blockedShots': 'BLOCKED SHOTS', 'giveaways': 'GIVEAWAYS', 'takeaways': 'TAKEAWAYS'}
+    for stat in team_stats:
+        if stat['category'] in desired_stats:
+            table.append(f'{desired_stats[stat['category']]:<16}{stat['homeValue']:>30}{stat['awayValue']:>5}')
+    table.append('```')
+    table = '\n'.join(table)
+    embed.add_field(name='Team Statistics', value=table, inline=False)
+
+    three_stars = game_story['summary']['threeStars']
+    table = ['']
+    for star in three_stars:
+        number = star['star']
+        number = (
+            '1st' if number == 1 else
+            '2nd' if number == 2 else
+            '3rd' if number == 3 else
+            f'{number}th')
+        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star['points']}')
+    table.append('')
+    table.reverse()
+    table = '\n'.join(table)
+    embed.add_field(name='Three Stars', value=table, inline=False)
     return embed

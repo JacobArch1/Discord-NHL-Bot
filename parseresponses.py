@@ -32,6 +32,10 @@ def get_response(command: str, parameters: list[str]) -> discord.Embed:
         elif command.startswith('score'):
             team = parameters
             return nhlresponses.get_live_score(team)
+        elif command.startswith('gamestory'):
+            team = parameters[0]
+            date = parameters[1]
+            return nhlresponses.get_game_story(team, date)
         elif command.startswith('register'):
             user_id = parameters[0]
             user_name = parameters[1]

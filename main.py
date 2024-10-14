@@ -73,6 +73,14 @@ class Commands(commands.Cog):
         response = get_response('score', team)
         await interaction.response.send_message(embed=response)
 
+    @app_commands.command(name='gamestory')
+    @app_commands.describe(team='Enter the team to get the story of their last game')
+    @app_commands.describe(date='Enter the date for this game YYYY-MM-DD. Records span back about a week')
+    async def gamestory_comand(self, interaction: discord.Interaction, team: str, date: str):
+        params = [team, date]
+        response = get_response('gamestory', params)
+        await interaction.response.send_message(embed=response)
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -144,7 +152,7 @@ class Casino(commands.Cog):
         params = [interaction.user.id, side, wager]
         response = get_response('coinflip', params)
         await interaction.response.send_message(embed=response)
-    
+
     async def check_cooldown(self, interaction:discord.Interaction, user_id: int):
         current_time = time.time()
         if user_id in self.cooldowns and current_time < self.cooldowns[user_id]:
