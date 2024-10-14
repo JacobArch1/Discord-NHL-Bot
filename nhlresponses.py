@@ -404,7 +404,10 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             goal_scorer = goal['name']['default']
             tog = goal['timeInPeriod']
             strength = goal['strength']
-            assister = goal['assists'][0]['name']['default']
+            if goal['assists']:
+                assister = goal['assists'][0]['name']['default']
+            else:
+                assister = 'None'
             video = goal.get('highlightClipSharingUrl', '[No Video]')
             if strength != 'ev':
                 strength = strength.upper()
