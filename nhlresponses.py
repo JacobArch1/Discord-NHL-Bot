@@ -441,7 +441,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if number == 2 else
             '3rd' if number == 3 else
             f'{number}th')
-        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star['points']}')
+        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star.get('points', '?')}')
     table.append('')
     table.reverse()
     table = '\n'.join(table)
