@@ -220,7 +220,7 @@ async def initialize_economy():
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     
-    with open('./databases/tables.sql', 'r') as f:
+    with open('./databases/econtables.sql', 'r') as f:
         script = f.read()
     c.executescript(script)
 
