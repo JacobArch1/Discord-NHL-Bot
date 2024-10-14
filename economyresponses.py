@@ -4,7 +4,7 @@ import sqlite3
 import discord
 
 def register(user_id: str, user_name: str) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     c.execute('SELECT * FROM Global_Economy WHERE user_id = ?', (user_id,))
     user = c.fetchone()
@@ -21,7 +21,7 @@ def register(user_id: str, user_name: str) -> discord.Embed:
     return embed
 
 def bonus(user_id: str) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
     c.execute('SELECT bonus FROM Global_Economy WHERE user_id = ?', (user_id,))
@@ -45,7 +45,7 @@ def bonus(user_id: str) -> discord.Embed:
     return embed
 
 def balance(user_id: str) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     
     c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
@@ -61,7 +61,7 @@ def balance(user_id: str) -> discord.Embed:
     return embed
 
 def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
     current_date = str(date.today())
@@ -109,7 +109,7 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
     return embed
 
 def mybets(user_id: int) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
     c.execute('SELECT * FROM Betting_Pool WHERE user_id = ?', (user_id,))
@@ -126,7 +126,7 @@ def mybets(user_id: int) -> discord.Embed:
     return embed
 
 def removebet(user_id: int, bet_id: int) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
     c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND user_id = ?', (bet_id, user_id))
@@ -159,7 +159,7 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
     return embed
 
 def leaderboard() -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     c.execute('SELECT user_name, balance FROM Global_Economy ORDER BY balance DESC')
     leaderboard = c.fetchall()

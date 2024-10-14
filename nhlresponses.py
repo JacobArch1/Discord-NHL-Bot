@@ -5,7 +5,7 @@ from collections import defaultdict
 import nhl
 
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect('./databases/players.db')
     c = conn.cursor()
     c.execute('SELECT id FROM players WHERE firstName == ? AND lastName == ?', (first_name, last_name,))
     player = c.fetchone()
@@ -105,7 +105,7 @@ def get_standings(season: str) -> discord.Embed:
         standings = nhl.get_current_standings()
         pre_title = 'Current'
     else:
-        conn = sqlite3.connect('standings.db')
+        conn = sqlite3.connect('./databases/standings.db')
         c = conn.cursor()
         c.execute('SELECT * FROM standings WHERE id == ?', (season,))
         end_date = c.fetchone()
@@ -237,7 +237,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     return embed
 
 def get_playoff_bracket() -> discord.Embed:
-    conn = sqlite3.connect('standings.db')
+    conn = sqlite3.connect('./databases/standings.db')
     c = conn.cursor()
     c.execute('SELECT * FROM standings ORDER BY rowid DESC LIMIT 1')
     season = c.fetchone()

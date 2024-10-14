@@ -53,7 +53,7 @@ def get_response(command: str, parameters: list[str]) -> discord.Embed:
             wager = float(parameters[2])
             return economyresponses.placebet(user_id, team, wager)
         elif command.startswith('mybets'):
-            user_id = parameters
+            user_id = parameters[0]
             return economyresponses.mybets(user_id)
         elif command.startswith('removebet'):
             user_id = parameters[0]

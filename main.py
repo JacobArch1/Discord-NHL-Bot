@@ -170,6 +170,17 @@ class Scheduled(commands.Cog):
         self.bot = bot
         self.bot.loop.create_task(self.reset_bonuses())
         self.bot.loop.create_task(self.check_game_over())
+        self.bot.loop.create_task(self.update_tables())
+
+    async def update_tables(self):
+        while True:
+            now = datetime.datetime.now()
+            then = now.replace(year=(now.year+1), month=8, day=30, hour=11, minute=59, second=59, microsecond=59)
+            wait_time = (then - now).total_seconds()
+            await asyncio.sleep(wait_time)
+            season = int(str(now.year) + str(now.year+1))
+            schedules.fetch_players(season)
+            schedules.fetch_standings()
 
     async def reset_bonuses(self):
         while True:
@@ -177,7 +188,6 @@ class Scheduled(commands.Cog):
             then = now.replace(hour=23, minute=59, second=59, microsecond=59)
             wait_time = (then - now).total_seconds()
             await asyncio.sleep(wait_time)
-            schedules.get_todays_games()
             schedules.reset_bonus()
 
     async def check_game_over(self):
@@ -207,10 +217,10 @@ async def setup(bot):
     await bot.tree.sync()
 
 async def initialize_economy():
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     
-    with open('tables.sql', 'r') as f:
+    with open('./databases/tables.sql', 'r') as f:
         script = f.read()
     c.executescript(script)
 

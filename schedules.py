@@ -3,7 +3,7 @@ import datetime
 import sqlite3
 
 def reset_bonus():
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     c.execute('UPDATE Global_Economy SET bonus = 0')
     conn.commit()
@@ -13,7 +13,7 @@ def reset_bonus():
         file.write(log_entry)
 
 def check_game_ended():
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     c.execute('SELECT game_id FROM Current_Games')
     games_list = c.fetchall()
@@ -31,7 +31,7 @@ def check_game_ended():
             games = c.fetchall()
             if not games:
                 get_todays_games(conn)
-    conn.commit()
+            conn.commit()
     conn.close()
  
 def cashout(conn, results: dict, game_id: int, game_type: int):
@@ -66,7 +66,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
 
         c.execute('UPDATE Global_Economy SET balance = ? WHERE user_id = ?', (balance, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
-    conn.commit()
+        conn.commit()
 
 def get_todays_games(conn):
     c = conn.cursor()
@@ -92,24 +92,22 @@ def get_todays_games(conn):
                 'INSERT INTO Current_Games (game_id, game_type, away_team, home_team, start_date, start_time) VALUES (?, ?, ?, ?, ?, ?)',
                 (game_id, game_type, away_team, home_team, est_date, est_time)
             )
-
+            conn.commit()
     if games_today is None:
         log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
     else:
         log_entry = f'No games today, Database cleared at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
     with open('./logs/schedulelog.txt', 'a') as file:
         file.write(log_entry)
-    conn.commit()
 
 def fetch_players(season: int):
-    conn = sqlite3.connect('players.db')
+    conn = sqlite3.connect('./databases/players.db')
+    c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT)''')
     conn.commit()
     for team in nhl.teams:
-        print(f'Fetching players for {team} in season {season}')
         results = nhl.get_team_roster_by_season(team, season)
         if 'error' in results:
-            print(f'Error fetching players for {team}')
             continue
         forwards_info = extract_player_info(results.get('forwards', []))
         defensemen_info = extract_player_info(results.get('defensemen', []))
@@ -140,7 +138,7 @@ def extract_player_info(players):
     return extracted_info
 
 def fetch_standings():
-    conn = sqlite3.connect('standings.db')
+    conn = sqlite3.connect('./databases/standings.db')
     c = conn.cursor()
     c.execute("DELETE FROM standings")
     results = nhl.get_standings_for_each_season()
@@ -150,11 +148,9 @@ def fetch_standings():
         season_id = season.get('id', 0)
         start_date = season.get('standingsStart', '')
         end_date = season.get('standingsEnd', '')
-        print(f'Inserting standings for season {season_id}')
         c.execute('''INSERT INTO standings (id, startDate, endDate) VALUES (?, ?, ?)''', (season_id, start_date, end_date))
-    conn.commit()
+        conn.commit()
     conn.close()
-
-#Manual Commands
-#get_todays_games(conn = sqlite3.connect('economy.db'))
-#reset_bonus()
+    log_entry = f'New Standings Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
+    with open('./logs/schedulelog.txt', 'a') as file:
+        file.write(log_entry)

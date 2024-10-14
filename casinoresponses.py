@@ -3,7 +3,7 @@ import discord
 import random
 
 def slots(user_id: int, wager: float) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     results = check_db(conn, user_id, wager)
     if isinstance(results, discord.Embed):
         return results
@@ -55,7 +55,7 @@ def slots(user_id: int, wager: float) -> discord.Embed:
     return embed
 
 def coinflip(user_id: int, side: str, wager: float) -> discord.Embed:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     results = check_db(conn, user_id, wager)
     if isinstance(results, discord.Embed):
         return results
@@ -79,7 +79,7 @@ def coinflip(user_id: int, side: str, wager: float) -> discord.Embed:
     return embed
 
 def check_db(conn, user_id: int, wager: float) -> bool:
-    conn = sqlite3.connect('economy.db')
+    conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     c.execute('SELECT balance FROM Global_Economy WHERE user_id == ?', (user_id,))
     balance = c.fetchone()
