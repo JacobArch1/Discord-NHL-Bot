@@ -94,9 +94,9 @@ def get_todays_games(conn):
             )
             conn.commit()
     if games_today is None:
-        log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
-    else:
         log_entry = f'No games today, Database cleared at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
+    else:
+        log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
     with open('./logs/schedulelog.txt', 'a') as file:
         file.write(log_entry)
 
