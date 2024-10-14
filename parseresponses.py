@@ -7,7 +7,8 @@ import datetime
 def get_response(command: str, parameters: list[str]) -> discord.Embed:
     try:
         if command.startswith('playerstats'):
-            first_name, last_name = parameters.split(' ')
+            first_name = parameters[0]
+            last_name = parameters[1]
             return nhlresponses.get_player_stats(first_name, last_name)
         elif command.startswith('currentstandings'):
             return nhlresponses.get_standings('')

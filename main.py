@@ -23,9 +23,11 @@ class Commands(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name='playerstats')
-    @app_commands.describe(player='Enter first and last name, capitalize each.')
-    async def playerstats_command(self, interaction: discord.Interaction, player: str):
-        response = get_response('playerstats', player)
+    @app_commands.describe(first_name='Enter first name.')
+    @app_commands.describe(last_name='Enter first name.')
+    async def playerstats_command(self, interaction: discord.Interaction, first_name: str, last_name: str):
+        params = [first_name, last_name]
+        response = get_response('playerstats', params)
         await interaction.response.send_message(embed=response)
 
     @app_commands.command(name='standings')

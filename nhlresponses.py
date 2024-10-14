@@ -1,12 +1,28 @@
 import datetime
 import discord
+import sqlite3
 from collections import defaultdict
 import nhl
 
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
-    player_id = nhl.get_player_id(first_name, last_name)
-    if isinstance(player_id, discord.Embed):
-        return player_id
+    conn = sqlite3.connect('players.db')
+    c = conn.cursor()
+    c.execute('SELECT id FROM players WHERE firstName == ? AND lastName == ?', (first_name, last_name,))
+    player = c.fetchone()
+    
+    if not player:
+        players = []
+        embed = discord.Embed(color=discord.Color.lighter_grey())
+        c.execute('SELECT * FROM players WHERE lastName == ?', (last_name,))
+        players = c.fetchall()
+        embed.add_field(name='', value='Player Not Found', inline=False)
+        if players:
+            embed.add_field(name='Did you mean one of these players?', value='', inline=False)
+        for player in players:
+            embed.add_field(name='', value=f'{player[1]} {player[2]}', inline=False)
+        return embed
+    
+    player_id = player[0]
     player_info = nhl.get_specific_player_info(player_id)
     if 'careerTotals' not in player_info:
         embed = discord.Embed(color=discord.Color.lighter_grey())
@@ -89,7 +105,16 @@ def get_standings(season: str) -> discord.Embed:
         standings = nhl.get_current_standings()
         pre_title = 'Current'
     else:
-        end_date = nhl.get_standings_end(season)
+        conn = sqlite3.connect('standings.db')
+        c = conn.cursor()
+        c.execute('SELECT * FROM standings WHERE id == ?', (season,))
+        end_date = c.fetchone()
+        if not end_date:
+            embed = discord.Embed(color=discord.Color.red())
+            embed.add_field(name='Error', value='Check Your Season Parameter', inline=False)
+            return embed
+        conn.close()
+        end_date = end_date[2]
         standings = nhl.get_standings_by_date(end_date)
         pre_title = season[:4] + '-' + season[4:]
     divisions = defaultdict(list)
@@ -212,7 +237,12 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     return embed
 
 def get_playoff_bracket() -> discord.Embed:
-    brackets = nhl.get_playoff_carousel(nhl.get_current_season())
+    conn = sqlite3.connect('standings.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM standings ORDER BY rowid DESC LIMIT 1')
+    season = c.fetchone()
+    c.close()
+    brackets = nhl.get_playoff_carousel(season)
     if 'rounds' not in brackets:
         embed = discord.Embed(color=discord.Color.red())
         embed.add_field(name='Error', value='No playoff information available', inline=False)

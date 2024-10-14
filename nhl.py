@@ -1,5 +1,3 @@
-import csv
-import discord
 import requests
 import datetime
 
@@ -16,61 +14,38 @@ oldteams = {'AFM', 'ATL', 'BRK', 'CGS', 'CLE', 'CLR', 'DCG', 'DFL', 'HAM', 'HFD'
             'TSP', 'UTA', 'WIN', }
 
 #Team Colors
-teams_colors = { 'ANA': '#F47A38', 'ARI': '#8C2633', 'BOS': '#FFB81C', 'BUF': '#003087', 'CAR': '#CE1126', 
-                 'CBJ': '#002654', 'CGY': '#D2001C', 'CHI': '#CF0A2C', 'COL': '#6F263D', 'DAL': '#006847', 
-                 'DET': '#ce1126', 'EDM': '#041E42', 'FLA': '#041E42', 'LAK': '#111111', 'MIN': '#A6192E', 
-                 'MTL': '#AF1E2D', 'NJD': '#CE1126', 'NSH': '#FFB81C', 'NYI': '#00539b', 'NYR': '#0038A8', 
-                 'OTT': '#000000', 'PHI': '#F74902', 'PIT': '#000000', 'SEA': '#001628', 'SJS': '#006D75', 
-                 'STL': '#002F87', 'TBL': '#002868', 'TOR': '#00205b', 'VAN': '#00205B', 'VGK': '#B4975A', 
-                 'WPG': '#041E42', 'WSH': '#041E42'}
-
-def get_player_id(first_name: str, last_name: str) -> int:
-    players = []
-    with open('players.csv', 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if first_name in row[1] and last_name in row[2]:
-                return row[0]
-            players.append(row)
-
-    filtered_players = [row for row in players if last_name in row[2]]
-    
-    embed = discord.Embed(color=discord.Color.lighter_grey())
-    embed.add_field(name = '', value='No player found...', inline=False)
-    if filtered_players:
-        players_names = [f'{row[1]} {row[2]}' for row in filtered_players]
-        embed.add_field(name='Did you mean one of these players?', value='\n'.join(players_names), inline=False)
-    return embed
-
-def get_standings_end(season: str) -> str:
-    with open('standings.csv', 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if season in row[0]:
-                return row[2]
-
-def get_team_abbr(team: str) -> str:
-    with open('teamslist/teams.csv', 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if team in row[1]:
-                return row[0]
-
-def get_team_name(team: str) -> str:
-    with open('teamslist/teams.csv', 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if team in row[1]:
-                return row[0]
-
-def get_current_season() -> int:
-    last_row = None
-    with open('standings.csv', 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            last_row = row
-    if last_row:
-        return int(last_row[0])
+teams_colors = {'ANA': '#F47A38', 
+                'ARI': '#8C2633', 
+                'BOS': '#FFB81C', 
+                'BUF': '#003087', 
+                'CAR': '#CE1126', 
+                'CBJ': '#002654', 
+                'CGY': '#D2001C', 
+                'CHI': '#CF0A2C', 
+                'COL': '#6F263D', 
+                'DAL': '#006847', 
+                'DET': '#ce1126', 
+                'EDM': '#041E42', 
+                'FLA': '#041E42', 
+                'LAK': '#111111', 
+                'MIN': '#A6192E', 
+                'MTL': '#AF1E2D', 
+                'NJD': '#CE1126', 
+                'NSH': '#FFB81C', 
+                'NYI': '#00539b', 
+                'NYR': '#0038A8', 
+                'OTT': '#000000', 
+                'PHI': '#F74902', 
+                'PIT': '#000000', 
+                'SEA': '#001628', 
+                'SJS': '#006D75', 
+                'STL': '#002F87', 
+                'TBL': '#002868', 
+                'TOR': '#00205b',
+                'VAN': '#00205B', 
+                'VGK': '#B4975A', 
+                'WPG': '#041E42', 
+                'WSH': '#041E42'}
 
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):

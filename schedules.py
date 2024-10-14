@@ -101,6 +101,60 @@ def get_todays_games(conn):
         file.write(log_entry)
     conn.commit()
 
+def fetch_players(season: int):
+    conn = sqlite3.connect('players.db')
+    c.execute('''CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT)''')
+    conn.commit()
+    for team in nhl.teams:
+        print(f'Fetching players for {team} in season {season}')
+        results = nhl.get_team_roster_by_season(team, season)
+        if 'error' in results:
+            print(f'Error fetching players for {team}')
+            continue
+        forwards_info = extract_player_info(results.get('forwards', []))
+        defensemen_info = extract_player_info(results.get('defensemen', []))
+        goalies_info = extract_player_info(results.get('goalies', []))
+        all_players_info = forwards_info + defensemen_info + goalies_info
+        for player in all_players_info:
+            c = conn.cursor()
+            c.execute('''SELECT * FROM players WHERE id = ?''', (player['id'],))
+            if c.fetchone():
+                continue
+            else:
+                c.execute('''INSERT INTO players (id, firstName, lastName) VALUES (?, ?, ?)''', (player['id'], player['firstName'], player['lastName']))
+                conn.commit()
+    conn.close()
+    log_entry = f'Recent Players Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
+    with open('./logs/schedulelog.txt', 'a') as file:
+        file.write(log_entry)
+
+def extract_player_info(players):
+    extracted_info = []
+    for player in players:
+        player_info = {
+            'id': player['id'],
+            'firstName': player['firstName']['default'],
+            'lastName': player['lastName']['default']
+        }
+        extracted_info.append(player_info)
+    return extracted_info
+
+def fetch_standings():
+    conn = sqlite3.connect('standings.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM standings")
+    results = nhl.get_standings_for_each_season()
+    seasons = results['seasons']
+    c = conn.cursor()
+    for season in seasons:
+        season_id = season.get('id', 0)
+        start_date = season.get('standingsStart', '')
+        end_date = season.get('standingsEnd', '')
+        print(f'Inserting standings for season {season_id}')
+        c.execute('''INSERT INTO standings (id, startDate, endDate) VALUES (?, ?, ?)''', (season_id, start_date, end_date))
+    conn.commit()
+    conn.close()
+
 #Manual Commands
 #get_todays_games(conn = sqlite3.connect('economy.db'))
 #reset_bonus()
