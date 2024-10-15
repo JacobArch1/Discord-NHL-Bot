@@ -46,7 +46,7 @@ class Commands(commands.Cog):
 
     @app_commands.command(name='leaders')
     @app_commands.describe(position='Skater or goalie')
-    @app_commands.describe(category='Use /glossary for list of categories')
+    @app_commands.describe(category='Use /info for list of categories')
     async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
         params = [position, category]
         response = get_response('leaders', params)

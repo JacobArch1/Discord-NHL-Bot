@@ -8,6 +8,7 @@ def get_info():
     embed = discord.Embed(title=f'Info For Commands', color=discord.Color.light_gray())
     embed.add_field(name='Betting Payouts', value=f'```Preseason Game 1.25x\nRegular Season Game 2.25x\nPlayoff Game 3.25x```', inline=False)
     embed.add_field(name='Leader Categories', value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', inline=False)
+    embed.add_field(name='Slots Payouts', value=f'\n🍒 - 2x\n🍋 - 5x\n🍎 - 10x\n💎 - 50x\n💰 - 100x\n\nClose Wins\n\tw/ 2x 💎 - 10x \n\tw/ 2x 💰 - 50x\n\t w/ Other - 0.5x')
     return embed
 
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
@@ -155,8 +156,10 @@ def get_standings(season: str) -> discord.Embed:
 
 def get_leaders(position: str, category: str) -> discord.Embed:
     category = category.lower()
-    if category ==('savepctg'):
+    if category == ('savepctg'):
         category = 'savePctg'
+    elif category == ('plusminus'):
+        category = 'plusMinus'
     position = position.lower()
     try:
         if position == ('skater'):
