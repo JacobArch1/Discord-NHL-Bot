@@ -22,6 +22,11 @@ class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @app_commands.command(name='info')
+    async def info_command(self, interaction: discord.Interaction):
+        response = get_response('info', None)
+        await interaction.response.send_message(content=interaction.user.mention, embed=response, ephemeral=True)
+
     @app_commands.command(name='playerstats')
     @app_commands.describe(first_name='Enter first name.')
     @app_commands.describe(last_name='Enter first name.')
@@ -78,7 +83,7 @@ class Commands(commands.Cog):
     @app_commands.command(name='gamestory')
     @app_commands.describe(team='Enter the team to get the story of their last game')
     @app_commands.describe(date='Enter the date for this game YYYY-MM-DD. Records span back about a week')
-    async def gamestory_comand(self, interaction: discord.Interaction, team: str, date: str):
+    async def gamestory_command(self, interaction: discord.Interaction, team: str, date: str):
         params = [team, date]
         response = get_response('gamestory', params)
         await interaction.response.send_message(embed=response)

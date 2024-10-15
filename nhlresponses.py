@@ -4,6 +4,12 @@ import sqlite3
 from collections import defaultdict
 import nhl
 
+def get_info():
+    embed = discord.Embed(title=f'Info For Commands', color=discord.Color.light_gray())
+    embed.add_field(name='Betting Payouts', value=f'```Preseason Game 1.25x\nRegular Season Game 2.25x\nPlayoff Game 3.25x```', inline=False)
+    embed.add_field(name='Leader Categories', value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', inline=False)
+    return embed
+
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/players.db')
     c = conn.cursor()
