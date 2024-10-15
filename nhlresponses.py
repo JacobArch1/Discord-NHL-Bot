@@ -384,10 +384,11 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     home_score = game_story['homeTeam']['score']
     away_score = game_story['awayTeam']['score']
     winner = (f'{home_team_name} Victory') if home_score > away_score else (f'{away_team_name} Victory')
-    message = (f'Score: {home_score}-{away_score} {winner}')
+    description = (f'Score: {home_score}-{away_score} {winner}')
 
+    embed = discord.Embed(title=title, color=discord.Color.light_gray(), description=description)
+    
     goal_highlights = game_story['summary']['scoring']
-    table = ['']
     for period in goal_highlights:
         descriptor = period['periodDescriptor']['number']
         period_num = (
@@ -395,7 +396,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if descriptor == 2 else
             '3rd' if descriptor == 3 else
             f'{descriptor}th')
-        table.append(f'\n{period_num} Period')
+        embed.add_field(name=f'\n{period_num} Period Goals', value='', inline=False)
         goals = period['goals']
         if not goals:
             table.append(f'No goals scored in this period.')
@@ -413,11 +414,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
                 strength = strength.upper()
             else:
                 strength = ''
-            table.append(f'[{scoring_team} {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})')
-    table.append('')
-    table = '\n'.join(table)
-    embed = discord.Embed(title=title, color=discord.Color.light_gray())
-    embed.add_field(name='Goal Highlights', value=(f'{message}{table}'), inline=False)
+            embed.add_field(name='', value=f'[**{scoring_team}** {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})', inline=False)
 
     home_team_abbr = game_story['homeTeam']['abbrev']
     away_team_abbr = game_story['awayTeam']['abbrev']
