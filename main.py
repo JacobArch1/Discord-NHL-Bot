@@ -127,11 +127,20 @@ class Commands(commands.Cog):
     
     @liveupdates_command.error
     async def return_error(self, interaction: discord.Interaction, error):
-        embed = discord.Embed(title='Error', color=discord.Color.red())
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.red()
+        )
         if isinstance(error, app_commands.MissingPermissions):
-            embed.add_field(name='', value='You do not have permission for this.')
+            embed.add_field(
+                name='', 
+                value='You do not have permission for this.'
+            )
         else:
-            embed.add_field(name='', value='Check your parameters. If your parameters are fine there is likely a code issue.')
+            embed.add_field(
+                name='', 
+                value='Check your parameters. If your parameters are fine there is likely a code issue.'
+            )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class Economy(commands.Cog):

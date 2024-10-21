@@ -5,10 +5,24 @@ from collections import defaultdict
 import nhl
 
 def get_info():
-    embed = discord.Embed(title=f'Info For Commands', color=discord.Color.light_gray())
-    embed.add_field(name='Betting Payouts', value=f'```Preseason Game 1.25x\nRegular Season Game 2.25x\nPlayoff Game 3.25x```', inline=False)
-    embed.add_field(name='Leader Categories', value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', inline=False)
-    embed.add_field(name='Slots Payouts', value=f'\n🍒 - 2x\n🍋 - 5x\n🍎 - 10x\n💎 - 50x\n💰 - 100x\n\nClose Wins\n\tw/ 2x 💎 - 10x \n\tw/ 2x 💰 - 50x\n\t w/ Other - 0.5x')
+    embed = discord.Embed(
+        title=f'Info For Commands', 
+        color=discord.Color.light_gray()
+    )
+    embed.add_field(
+        name='Betting Payouts', 
+        value=f'```Preseason Game 1.25x\nRegular Season Game 2.25x\nPlayoff Game 3.25x```', 
+        inline=False
+    )
+    embed.add_field(
+        name='Leader Categories', 
+        value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', 
+        inline=False
+    )
+    embed.add_field(
+        name='Slots Payouts', 
+        value=f'\n🍒 - 2x\n🍋 - 5x\n🍎 - 10x\n💎 - 50x\n💰 - 100x\n\nClose Wins\n\tw/ 2x 💎 - 10x \n\tw/ 2x 💰 - 50x\n\t w/ Other - 0.5x'
+    )
     return embed
 
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
@@ -18,22 +32,38 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     player = c.fetchone()
     
     if not player:
-        players = []
+        close_players = []
         embed = discord.Embed(color=discord.Color.lighter_grey())
         c.execute('SELECT * FROM players WHERE lastName == ?', (last_name,))
-        players = c.fetchall()
-        embed.add_field(name='', value='Player Not Found', inline=False)
-        if players:
-            embed.add_field(name='Did you mean one of these players?', value='', inline=False)
-        for player in players:
-            embed.add_field(name='', value=f'{player[1]} {player[2]}', inline=False)
+        close_players = c.fetchall()
+        embed.add_field(
+            name='', 
+            value='Player Not Found', 
+            inline=False
+        )
+        if close_players:
+            embed.add_field(
+                name='Did you mean one of these players?', 
+                value='', 
+                inline=False
+            )
+        for player in close_players:
+            embed.add_field(
+                name='', 
+                value=f'{player[1]} {player[2]}', 
+                inline=False
+            )
         return embed
     
     player_id = player[0]
     player_info = nhl.get_specific_player_info(player_id)
     if 'careerTotals' not in player_info:
         embed = discord.Embed(color=discord.Color.lighter_grey())
-        embed.add_field(name='', value='No stats available for this player', inline=False)
+        embed.add_field(
+            name='', 
+            value='No stats available for this player', 
+            inline=False
+        )
         return embed
     
     if 'regularSeason' in player_info['careerTotals']:
@@ -98,8 +128,15 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
         title=f'{player_info['firstName']['default']} {player_info['lastName']['default']}',
         color = discord.Color(int(nhl.teams_colors.get(player_info.get('currentTeamAbbrev', '???'), '#FFFFFF').lstrip('#'), 16))
     )
-    embed.set_author(name=f'#{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]', icon_url=player_info.get('headshot'))
-    embed.add_field(name='Career Statistics', value=formatted_table, inline=False)
+    embed.set_author(
+        name=f'#{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]', 
+        icon_url=player_info.get('headshot')
+    )
+    embed.add_field(
+        name='Career Statistics', 
+        value=formatted_table, 
+        inline=False
+    )
     if 'fullTeamName' in player_info:
         team_name = player_info['fullTeamName'].get('default', 'Unknown Team')
     else:
@@ -118,7 +155,11 @@ def get_standings(season: str) -> discord.Embed:
         end_date = c.fetchone()
         if not end_date:
             embed = discord.Embed(color=discord.Color.red())
-            embed.add_field(name='Error', value='Check Your Season Parameter', inline=False)
+            embed.add_field(
+                name='Error', 
+                value='Check Your Season Parameter', 
+                inline=False
+            )
             return embed
         conn.close()
         end_date = end_date[2]
@@ -149,7 +190,11 @@ def get_standings(season: str) -> discord.Embed:
             table.append(f'{teamname:<15}{team.get('wins', 0):>5}{team.get('losses', 0):>5}{team.get('points', 0):>5}')
         table.append('```')
         formatted_table = '\n'.join(table)
-        embed.add_field(name=division, value=formatted_table[:1024], inline=False)
+        embed.add_field(
+            name=division, 
+            value=formatted_table[:1024], 
+            inline=False
+        )
         embed.set_footer(text=f'p - Clinched President\'s Trophy \nx - Clinched Playoff Spot \ny - Clinched Division \nz - Clinched Conference')
 
     return embed
@@ -168,11 +213,19 @@ def get_leaders(position: str, category: str) -> discord.Embed:
             results = nhl.get_current_goalie_stats_leaders(category, 10)
         else:
             embed = discord.Embed(color=discord.Color.red())
-            embed.add_field(name='Error', value='Position doesnt exist.', inline=False)
+            embed.add_field(
+                name='Error', 
+                value='Position doesnt exist.', 
+                inline=False
+            )
             return embed
     except Exception:
         embed = discord.Embed(color=discord.Color.red())
-        embed.add_field(name='Error', value='Category doesnt exist.', inline=False)
+        embed.add_field(
+            name='Error', 
+            value='Category doesnt exist.', 
+            inline=False
+        )
         return embed
     
     embed = discord.Embed(
@@ -189,7 +242,11 @@ def get_leaders(position: str, category: str) -> discord.Embed:
         table.append(f'{playername:<20}{player.get('teamAbbrev', 'NUL'):>5}{player.get('value', 0):>5}')
     table.append('```')
     formatted_table = '\n'.join(table)
-    embed.add_field(name='',value=formatted_table[:1024], inline=False)
+    embed.add_field(
+        name='',
+        value=formatted_table[:1024], 
+        inline=False
+    )
 
     return embed
 
@@ -206,7 +263,11 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
 
     if 'goalies' not in team_stats:
         embed = discord.Embed(color=discord.Color.red())
-        embed.add_field(name='Error', value='No roster available', inline=False)
+        embed.add_field(
+            name='Error', 
+            value='No roster available', 
+            inline=False
+        )
         embed.set_footer(text='Check your paramters')
         return embed
     
@@ -219,7 +280,11 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
         table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     goalie_table = '\n'.join(table)
-    embed.add_field(name='Goalies', value=goalie_table[:1024], inline=False)
+    embed.add_field(
+        name='Goalies', 
+        value=goalie_table[:1024], 
+        inline=False
+    )
 
     table = [
         '```',
@@ -230,7 +295,11 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
         table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     forward_table = '\n'.join(table)
-    embed.add_field(name='Forwards', value=forward_table[:1024], inline=False)
+    embed.add_field(
+        name='Forwards', 
+        value=forward_table[:1024], 
+        inline=False
+    )
 
     table = [
         '```',
@@ -241,7 +310,11 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
         table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     defense_table = '\n'.join(table)
-    embed.add_field(name='Defensemen', value=defense_table[:1024], inline=False)
+    embed.add_field(
+        name='Defensemen',
+          value=defense_table[:1024], 
+          inline=False
+    )
 
     return embed
 
@@ -254,7 +327,11 @@ def get_playoff_bracket() -> discord.Embed:
     brackets = nhl.get_playoff_carousel(season)
     if 'rounds' not in brackets:
         embed = discord.Embed(color=discord.Color.red())
-        embed.add_field(name='Error', value='No playoff information available', inline=False)
+        embed.add_field(
+            name='Error', 
+            value='No playoff information available', 
+            inline=False
+        )
         return embed
 
     embed = discord.Embed(color=discord.Color(0xFFFFFF))
@@ -272,7 +349,11 @@ def get_playoff_bracket() -> discord.Embed:
         
         table.append('```')
         table = '\n'.join(table)
-        embed.add_field(name=f'Round {round_number}', value=table, inline=False)
+        embed.add_field(
+            name=f'Round {round_number}', 
+            value=table, 
+            inline=False
+        )
          
     return embed
 
@@ -280,7 +361,10 @@ def get_team_schedule(team: str) -> discord.Embed:
     schedule = nhl.get_week_schedule_now(team)
     embed = discord.Embed(color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16)))
     if 'games' in schedule and not schedule['games']:
-        embed.add_field(name=f'{team} Week Schedule', value=f'There are no games scheduled for {team} this week')
+        embed.add_field(
+            name=f'{team} Week Schedule', 
+            value=f'There are no games scheduled for {team} this week'
+        )
         return embed
     
     table = ['```']
@@ -298,7 +382,11 @@ def get_team_schedule(team: str) -> discord.Embed:
     
     table.append('```')
     table = '\n'.join(table)
-    embed.add_field(name=f'{team} Week Schedule', value=table, inline=False)
+    embed.add_field(
+        name=f'{team} Week Schedule', 
+        value=table, 
+        inline=False
+    )
     return embed
 
 def get_league_schedule() -> discord.Embed:
@@ -318,11 +406,18 @@ def get_league_schedule() -> discord.Embed:
         
         table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] {venue}')
     if table == ['```']:
-        embed.add_field(name=f'No Games Scheduled Today', value='')
+        embed.add_field(
+            name=f'No Games Scheduled Today', 
+            value=''
+        )
         return embed
     table.append('```')
     table = '\n'.join(table)
-    embed.add_field(name=f'Today\'s Games', value=table, inline=False)
+    embed.add_field(
+        name=f'Today\'s Games', 
+        value=table, 
+        inline=False
+    )
     return embed
 
 def get_live_score(team: str) -> discord.Embed:
@@ -342,7 +437,10 @@ def get_live_score(team: str) -> discord.Embed:
 
     if scoreboard is None:
         embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='This team is not playing today.')
+        embed.add_field(
+            name='', 
+            value='This team is not playing today.'
+        )
         return embed
     
     time_remaining = scoreboard.get('clock', {}).get('timeRemaining', 0)
@@ -361,7 +459,10 @@ def get_live_score(team: str) -> discord.Embed:
         color = discord.Color.dark_gray()
     
     embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
-    embed.add_field(name='', value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```')
+    embed.add_field(
+        name='', 
+        value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```'
+    )
     embed.set_footer(text=f'{scoreboard['gameState']}')
     return embed
 
@@ -395,7 +496,11 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     winner = (f'{home_team_name} Victory') if home_score > away_score else (f'{away_team_name} Victory')
     description = (f'Score: {home_score}-{away_score} {winner}')
 
-    embed = discord.Embed(title=title, color=discord.Color.light_gray(), description=description)
+    embed = discord.Embed(
+        title=title, 
+        color=discord.Color.light_gray(), 
+        description=description
+    )
     
     goal_highlights = game_story['summary']['scoring']
     for period in goal_highlights:
@@ -405,7 +510,11 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if descriptor == 2 else
             '3rd' if descriptor == 3 else
             f'{descriptor}th')
-        embed.add_field(name=f'\n{period_num} Period Goals', value='', inline=False)
+        embed.add_field(
+            name=f'\n{period_num} Period Goals',
+            value='', 
+            inline=False
+        )
         goals = period['goals']
         if not goals:
             table.append(f'No goals scored in this period.')
@@ -423,7 +532,11 @@ def get_game_story(team: str, date: str) -> discord.Embed:
                 strength = strength.upper()
             else:
                 strength = ''
-            embed.add_field(name='', value=f'[**{scoring_team}** {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})', inline=False)
+            embed.add_field(
+                name='', 
+                value=f'[**{scoring_team}** {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})', 
+                inline=False
+            )
 
     home_team_abbr = game_story['homeTeam']['abbrev']
     away_team_abbr = game_story['awayTeam']['abbrev']
@@ -432,14 +545,23 @@ def get_game_story(team: str, date: str) -> discord.Embed:
         '```',
         f'{'STAT':<16}{f'{home_team_abbr}':>30}{f'{away_team_abbr}':>5}\n',
     ]
-    desired_stats = {'sog': 'SOG', 'powerPlay': 'POWER PLAY GOALS', 'pim': 'PENALTY MINUTES', 'hits': 'HITS', 
-                     'blockedShots': 'BLOCKED SHOTS', 'giveaways': 'GIVEAWAYS', 'takeaways': 'TAKEAWAYS'}
+    desired_stats = {'sog': 'SOG', 
+                     'powerPlay': 'POWER PLAY GOALS', 
+                     'pim': 'PENALTY MINUTES', 
+                     'hits': 'HITS', 
+                     'blockedShots': 'BLOCKED SHOTS', 
+                     'giveaways': 'GIVEAWAYS', 
+                     'takeaways': 'TAKEAWAYS'}
     for stat in team_stats:
         if stat['category'] in desired_stats:
             table.append(f'{desired_stats[stat['category']]:<16}{stat['homeValue']:>30}{stat['awayValue']:>5}')
     table.append('```')
     table = '\n'.join(table)
-    embed.add_field(name='Team Statistics', value=table, inline=False)
+    embed.add_field(
+        name='Team Statistics', 
+        value=table, 
+        inline=False
+    )
 
     three_stars = game_story['summary']['threeStars']
     table = ['']
@@ -454,5 +576,9 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     table.append('')
     table.reverse()
     table = '\n'.join(table)
-    embed.add_field(name='Three Stars', value=table, inline=False)
+    embed.add_field(
+        name='Three Stars', 
+        value=table, 
+        inline=False
+    )
     return embed

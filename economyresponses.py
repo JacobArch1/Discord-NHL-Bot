@@ -9,12 +9,26 @@ def register(user_id: str, user_name: str) -> discord.Embed:
     c.execute('SELECT * FROM Global_Economy WHERE user_id = ?', (user_id,))
     user = c.fetchone()
     if user:
-        embed = discord.Embed(title = 'Error', color = discord.Color.red())
-        embed.add_field(name='', value='You are already registered.', inline=False)
+        embed = discord.Embed(
+            title = 'Error', 
+            color = discord.Color.red()
+        )
+        embed.add_field(
+            name='', 
+            value='You are already registered.', 
+            inline=False
+        )
     else:
         c.execute('INSERT INTO Global_Economy (user_id, balance, user_name) VALUES (?, ?, ?)', (user_id, 100, user_name))
-        embed = discord.Embed(title = 'Registered!', color = discord.Color.green())
-        embed.add_field(name='', value='You have succesfully registered to the global economy.', inline=False)
+        embed = discord.Embed(
+            title = 'Registered!', 
+            color = discord.Color.green()
+        )
+        embed.add_field(
+            name='', 
+            value='You have succesfully registered to the global economy.', 
+            inline=False
+        )
         conn.commit()
 
     conn.close()
@@ -28,18 +42,39 @@ def bonus(user_id: str) -> discord.Embed:
     result = c.fetchone()
 
     if result is None:
-        embed = discord.Embed(title='Error', color=discord.Color.yellow())
-        embed.add_field(name='', value='You are not registered in the economy. Use /register to register.', inline=False)
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='You are not registered in the economy. Use /register to register.', 
+            inline=False
+        )
     elif result[0] == 1:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='Your bonus has already been claimed.', inline=False)
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow
+        )
+        embed.add_field(
+            name='', 
+            value='Your bonus has already been claimed.', 
+            inline=False
+        )
     else:
         bonus_amount = 500
         c.execute('UPDATE Global_Economy SET bonus = 1, balance = balance + ? WHERE user_id = ?', (bonus_amount, user_id))
         conn.commit()
 
-        embed = discord.Embed(title='Claimed!', color=discord.Color.green())
-        embed.add_field(name='', value=f'You claimed your daily ${bonus_amount} bonus.', inline=False)
+        embed = discord.Embed(
+            title='Claimed!', 
+            color=discord.Color.green()
+        )
+        embed.add_field(
+            name='', 
+            value=f'You claimed your daily ${bonus_amount} bonus.', 
+            inline=False
+        )
 
     conn.close()
     return embed
@@ -51,11 +86,25 @@ def balance(user_id: str) -> discord.Embed:
     c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
     balance = c.fetchone()
     if balance is None:
-        embed = discord.Embed(title='Error', color=discord.Color.yellow())
-        embed.add_field(name='', value='You are not registered in the economy. Use /register to register.', inline=False)
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='You are not registered in the economy. Use /register to register.', 
+            inline=False
+        )
     else:
-        embed = discord.Embed(title='Balance', color=discord.Color.green())
-        embed.add_field(name='', value=f'Your Balance is: ${balance[0]}', inline=False)
+        embed = discord.Embed(
+            title='Balance', 
+            color=discord.Color.green
+        )
+        embed.add_field(
+            name='', 
+            value=f'Your Balance is: ${balance[0]}', 
+            inline=False
+        )
 
     conn.close()
     return embed
@@ -71,32 +120,71 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
     close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
 
     if game is None:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='The team you selected is not playing today.', inline=False)
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow
+        )
+        embed.add_field(
+            name='', 
+            value='The team you selected is not playing today.', 
+            inline=False
+        )
         return embed
     
     if current_time > close_time:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='Bets for this game are closed.', inline=False)
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='Bets for this game are closed.', 
+            inline=False
+        )
         return embed
 
     c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
     balance = c.fetchone()
     if balance is None:
-        embed = discord.Embed(title='Error', color=discord.Color.yellow())
-        embed.add_field(name='', value='You are not registered in the economy. Use /register to register.', inline=False)
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='You are not registered in the economy. Use /register to register.', 
+            inline=False
+        )
     elif balance[0] < wager:
         embed = discord.Embed(title='Error', color=discord.Color.red())
-        embed.add_field(name='', value='You do not have enough balance to place this bet.', inline=False)
+        embed.add_field(
+            name='', 
+            value='You do not have enough balance to place this bet.', 
+            inline=False
+        )
     elif wager < 1 or wager > 500:
-        embed = discord.Embed(title='Error', color=discord.Color.red())
-        embed.add_field(name='', value='Your money line wager must be between $1 and $500.', inline=False)
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.red()
+        )
+        embed.add_field(
+            name='', 
+            value='Your money line wager must be between $1 and $500.', 
+            inline=False
+        )
     else:
         c.execute('SELECT user_id FROM Betting_Pool WHERE user_id = ? AND game_id = ?', (user_id, game[1]))
         user = c.fetchone()
         if user:
-            embed = discord.Embed(title='Error', color=discord.Color.yellow())
-            embed.add_field(name='', value='You have already placed a bet on this game.', inline=False)
+            embed = discord.Embed(
+                title='Error', 
+                color=discord.Color.yellow()
+            )
+            embed.add_field(
+                name='', 
+                value='You have already placed a bet on this game.', 
+                inline=False
+            )
             return embed
         game_id = game[1]
         game_type = game[4]
@@ -105,7 +193,11 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
         conn.commit()
 
         embed = discord.Embed(title='Success!', color=discord.Color.green())
-        embed.add_field(name='', value='Your bet has been placed.', inline=False)
+        embed.add_field(
+            name='', 
+            value='Your bet has been placed.', 
+            inline=False
+        )
     return embed
 
 def mybets(user_id: int) -> discord.Embed:
@@ -115,12 +207,26 @@ def mybets(user_id: int) -> discord.Embed:
     c.execute('SELECT * FROM Betting_Pool WHERE user_id = ?', (user_id,))
     bets = c.fetchall()
     if not bets:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='You do not have any bets placed.', inline=False)
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='You do not have any bets placed.', 
+            inline=False
+        )
     else:
-        embed = discord.Embed(title='My Bets', color=discord.Color.green())
+        embed = discord.Embed(
+            title='My Bets', 
+            color=discord.Color.green()
+        )
         for bet in bets:
-            embed.add_field(name=f'Bet Id: {bet[0]}', value=f'Moneyline: {bet[4]}: ${bet[5]}', inline=False)
+            embed.add_field(
+                name=f'Bet Id: {bet[0]}', 
+                value=f'Moneyline: {bet[4]}: ${bet[5]}', 
+                inline=False
+            )
 
     conn.close()
     return embed
@@ -137,23 +243,43 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
     game = c.fetchone()
     
     game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
-    one_hour_before_start = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(hours=1)).time()
+    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
     current_time = datetime.datetime.now().time()
 
     if bet is None:
-        embed = discord.Embed(title='Error', color=discord.Color.red())
-        embed.add_field(name='', value='Could not find bet.', inline=False)
-    elif current_time > one_hour_before_start:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
-        embed.add_field(name='', value='Betting for this game is closed. Cannot remove bet.')
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.red()
+        )
+        embed.add_field(
+            name='', 
+            value='Could not find bet.', 
+            inline=False
+        )
+    elif current_time > close_time:
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='Betting for this game is closed. Cannot remove bet.'
+        )
     else:
         refund = bet[5]
         c.execute('UPDATE Global_Economy SET balance = balance + ? WHERE user_id = ?', (refund, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE user_id = ?', (user_id,))
         conn.commit()
 
-        embed = discord.Embed(title='Success!', color=discord.Color.green())
-        embed.add_field(name='', value='Your bet has been removed.', inline=False)
+        embed = discord.Embed(
+            title='Success!', 
+            color=discord.Color.green()
+        )
+        embed.add_field(
+            name='', 
+            value='Your bet has been removed.', 
+            inline=False
+        )
 
     conn.close()
     return embed
@@ -163,7 +289,10 @@ def leaderboard() -> discord.Embed:
     c = conn.cursor()
     c.execute('SELECT user_name, balance FROM Global_Economy ORDER BY balance DESC')
     leaderboard = c.fetchall()
-    embed = discord.Embed(title='Leaderboard', color=discord.Color.green())
+    embed = discord.Embed(
+        title='Leaderboard', 
+        color=discord.Color.green()
+    )
     table = [
             '```',
             f'{'Rank':<5}{'User':<25}{'Balance':>5}\n',
@@ -172,6 +301,10 @@ def leaderboard() -> discord.Embed:
         user_name, balance = leaderboard[i]
         table.append(f'{i + 1:<5}{user_name:<25}{balance:>5}\n')
     table.append('```')
-    embed.add_field(name='', value=''.join(table), inline=False)
+    embed.add_field(
+        name='', 
+        value=''.join(table), 
+        inline=False
+    )
     conn.close()
     return embed
