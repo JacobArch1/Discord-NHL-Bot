@@ -2,7 +2,7 @@ import sqlite3
 import discord
 import random
 
-def slots(user_id: int, wager: float) -> discord.Embed:
+def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     results = check_db(conn, user_id, wager)
     if isinstance(results, discord.Embed):
@@ -77,7 +77,7 @@ def slots(user_id: int, wager: float) -> discord.Embed:
         payout = 0
 
     c = conn.cursor()
-    c.execute('UPDATE Global_Economy SET balance = balance + ? WHERE user_id = ?', (round(payout,2), user_id))
+    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
     conn.commit()
     conn.close()
     embed.add_field(
@@ -87,9 +87,9 @@ def slots(user_id: int, wager: float) -> discord.Embed:
     embed.set_footer(text=f'Payout: ${round(payout, 2)}')
     return embed
 
-def coinflip(user_id: int, side: str, wager: float) -> discord.Embed:
+def coinflip(user_id: int, guild_id: int, side: str, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
-    results = check_db(conn, user_id, wager)
+    results = check_db(conn, user_id, guild_id, wager)
     if isinstance(results, discord.Embed):
         return results
     elif side not in ['H', 'T']:
@@ -127,10 +127,10 @@ def coinflip(user_id: int, side: str, wager: float) -> discord.Embed:
     embed.set_footer(text=f'Payout: ${round(payout, 2)}')
     return embed
 
-def check_db(conn, user_id: int, wager: float) -> bool:
+def check_db(conn, user_id: int, guild_id: int, wager: float) -> bool:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
-    c.execute('SELECT balance FROM Global_Economy WHERE user_id == ?', (user_id,))
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     balance = c.fetchone()
     if balance is None:
         embed = discord.Embed(
@@ -145,7 +145,7 @@ def check_db(conn, user_id: int, wager: float) -> bool:
     elif balance[0] < wager:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow
+            color=discord.Color.yellow()
         )
         embed.add_field(
             name='', 
@@ -165,6 +165,6 @@ def check_db(conn, user_id: int, wager: float) -> bool:
         )
         return embed
     else:
-        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (wager, user_id))
+        c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (wager, guild_id, user_id))
         conn.commit()
         return True

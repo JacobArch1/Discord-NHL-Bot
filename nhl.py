@@ -45,7 +45,8 @@ teams_colors = {'ANA': '#F47A38',
                 'VAN': '#00205B', 
                 'VGK': '#B4975A', 
                 'WPG': '#041E42', 
-                'WSH': '#041E42'}
+                'WSH': '#041E42',
+                'UTA': '#71AFE5'}
 
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):

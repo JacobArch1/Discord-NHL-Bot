@@ -5,7 +5,7 @@ import sqlite3
 def reset_bonus():
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
-    c.execute('UPDATE Global_Economy SET bonus = 0')
+    c.execute('UPDATE User_Economy SET bonus = 0')
     conn.commit()
     conn.close()
     log_entry = f'Bonuses have been reset at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
@@ -56,7 +56,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
         wager = bet[5] 
 
         c = conn.cursor()
-        c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
+        c.execute('SELECT balance FROM User_Economy WHERE user_id = ?', (user_id,))
         balance_row = c.fetchone()
         balance = balance_row[0]
 
@@ -64,7 +64,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
         if bet_won:
             balance += wager * multiplier
 
-        c.execute('UPDATE Global_Economy SET balance = ? WHERE user_id = ?', (balance, user_id))
+        c.execute('UPDATE User_Economy SET balance = ? WHERE user_id = ?', (balance, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 

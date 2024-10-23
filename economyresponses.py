@@ -3,10 +3,10 @@ import datetime
 import sqlite3
 import discord
 
-def register(user_id: str, user_name: str) -> discord.Embed:
+def register(user_id: str, user_name: str, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM Global_Economy WHERE user_id = ?', (user_id,))
+    c.execute('SELECT * FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     user = c.fetchone()
     if user:
         embed = discord.Embed(
@@ -19,14 +19,14 @@ def register(user_id: str, user_name: str) -> discord.Embed:
             inline=False
         )
     else:
-        c.execute('INSERT INTO Global_Economy (user_id, balance, user_name) VALUES (?, ?, ?)', (user_id, 100, user_name))
+        c.execute('INSERT INTO User_Economy (guild_id, user_id, balance, user_name) VALUES (?, ?, ?, ?)', (guild_id, user_id, 100, user_name,))
         embed = discord.Embed(
             title = 'Registered!', 
             color = discord.Color.green()
         )
         embed.add_field(
             name='', 
-            value='You have succesfully registered to the global economy.', 
+            value='You have succesfully registered.', 
             inline=False
         )
         conn.commit()
@@ -34,11 +34,11 @@ def register(user_id: str, user_name: str) -> discord.Embed:
     conn.close()
     return embed
 
-def bonus(user_id: str) -> discord.Embed:
+def bonus(user_id: str, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
-    c.execute('SELECT bonus FROM Global_Economy WHERE user_id = ?', (user_id,))
+    c.execute('SELECT bonus FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     result = c.fetchone()
 
     if result is None:
@@ -63,7 +63,7 @@ def bonus(user_id: str) -> discord.Embed:
         )
     else:
         bonus_amount = 500
-        c.execute('UPDATE Global_Economy SET bonus = 1, balance = balance + ? WHERE user_id = ?', (bonus_amount, user_id))
+        c.execute('UPDATE User_Economy SET bonus = 1, balance = balance + ? WHERE guild_id = ? AND user_id = ?', (bonus_amount, guild_id, user_id,))
         conn.commit()
 
         embed = discord.Embed(
@@ -79,11 +79,11 @@ def bonus(user_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def balance(user_id: str) -> discord.Embed:
+def balance(user_id: str, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     
-    c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     balance = c.fetchone()
     if balance is None:
         embed = discord.Embed(
@@ -98,7 +98,7 @@ def balance(user_id: str) -> discord.Embed:
     else:
         embed = discord.Embed(
             title='Balance', 
-            color=discord.Color.green
+            color=discord.Color.green()
         )
         embed.add_field(
             name='', 
@@ -109,20 +109,17 @@ def balance(user_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
+def placebet(user_id: int, guild_id: str, team: str, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
     current_date = str(date.today())
     c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (team, team, current_date))
     game = c.fetchone()
-    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
-    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
-
     if game is None:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow
+            color=discord.Color.yellow()
         )
         embed.add_field(
             name='', 
@@ -130,7 +127,8 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
             inline=False
         )
         return embed
-    
+    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
+    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
     if current_time > close_time:
         embed = discord.Embed(
             title='Notice', 
@@ -142,8 +140,7 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
             inline=False
         )
         return embed
-
-    c.execute('SELECT balance FROM Global_Economy WHERE user_id = ?', (user_id,))
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     balance = c.fetchone()
     if balance is None:
         embed = discord.Embed(
@@ -169,11 +166,11 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
         )
         embed.add_field(
             name='', 
-            value='Your money line wager must be between $1 and $500.', 
+            value='Your wager must be between $1 and $500.', 
             inline=False
         )
     else:
-        c.execute('SELECT user_id FROM Betting_Pool WHERE user_id = ? AND game_id = ?', (user_id, game[1]))
+        c.execute('SELECT user_id FROM Betting_Pool WHERE guild_id = ? AND user_id = ? AND game_id = ?', (guild_id, user_id, game[1],))
         user = c.fetchone()
         if user:
             embed = discord.Embed(
@@ -188,11 +185,13 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
             return embed
         game_id = game[1]
         game_type = game[4]
-        c.execute('UPDATE Global_Economy SET balance = balance - ? WHERE user_id = ?', (wager, user_id))
-        c.execute('INSERT INTO Betting_Pool (game_id, game_type, user_id, team, wager) VALUES (?, ?, ?, ?, ?)', (game_id, game_type, user_id, team, wager))
+        c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (wager, guild_id, user_id,))
+        c.execute('INSERT INTO Betting_Pool (game_id, guild_id, game_type, user_id, team, wager) VALUES (?, ?, ?, ?, ?, ?)', (game_id, guild_id, game_type, user_id, team, wager,))
         conn.commit()
-
-        embed = discord.Embed(title='Success!', color=discord.Color.green())
+        embed = discord.Embed(
+            title='Success!', 
+            color=discord.Color.green()
+        )
         embed.add_field(
             name='', 
             value='Your bet has been placed.', 
@@ -200,11 +199,11 @@ def placebet(user_id: int, team: str, wager: float) -> discord.Embed:
         )
     return embed
 
-def mybets(user_id: int) -> discord.Embed:
+def mybets(user_id: int, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
-    c.execute('SELECT * FROM Betting_Pool WHERE user_id = ?', (user_id,))
+    c.execute('SELECT * FROM Betting_Pool WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     bets = c.fetchall()
     if not bets:
         embed = discord.Embed(
@@ -224,18 +223,18 @@ def mybets(user_id: int) -> discord.Embed:
         for bet in bets:
             embed.add_field(
                 name=f'Bet Id: {bet[0]}', 
-                value=f'Moneyline: {bet[4]}: ${bet[5]}', 
+                value=f'Moneyline: {bet[5]}: ${bet[6]}', 
                 inline=False
             )
 
     conn.close()
     return embed
 
-def removebet(user_id: int, bet_id: int) -> discord.Embed:
+def removebet(user_id: int, guild_id: str, bet_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
 
-    c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND user_id = ?', (bet_id, user_id))
+    c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND guild_id = ? AND user_id = ?', (bet_id, guild_id, user_id,))
     bet = c.fetchone()
     game_id = bet[1]
 
@@ -266,9 +265,9 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
             value='Betting for this game is closed. Cannot remove bet.'
         )
     else:
-        refund = bet[5]
-        c.execute('UPDATE Global_Economy SET balance = balance + ? WHERE user_id = ?', (refund, user_id))
-        c.execute('DELETE FROM Betting_Pool WHERE user_id = ?', (user_id,))
+        refund = bet[6]
+        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (refund, guild_id, user_id,))
+        c.execute('DELETE FROM Betting_Pool WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
         conn.commit()
 
         embed = discord.Embed(
@@ -284,10 +283,10 @@ def removebet(user_id: int, bet_id: int) -> discord.Embed:
     conn.close()
     return embed
 
-def leaderboard() -> discord.Embed:
+def leaderboard(guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/economy.db')
     c = conn.cursor()
-    c.execute('SELECT user_name, balance FROM Global_Economy ORDER BY balance DESC')
+    c.execute('SELECT user_name, balance FROM User_Economy WHERE guild_id = ? ORDER BY balance DESC', (guild_id,))
     leaderboard = c.fetchall()
     embed = discord.Embed(
         title='Leaderboard', 
