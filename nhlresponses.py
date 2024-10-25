@@ -582,3 +582,6 @@ def get_game_story(team: str, date: str) -> discord.Embed:
         inline=False
     )
     return embed
+
+def get_live_updates():
+    return 0

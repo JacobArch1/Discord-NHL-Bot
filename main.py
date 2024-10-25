@@ -116,12 +116,12 @@ class Commands(commands.Cog):
             await interaction.response.send_message(embed=await return_error('GAMESTORY', [team, date], e))
 
     @app_commands.command(name='liveupdates')
-    @app_commands.describe(team='Enter the team you want live updates for')
+    @app_commands.describe(team='Enter the team you want live updates for. This will send updates in whatever channel your typing this command.')
     @app_commands.checks.has_permissions(administrator=True)
     async def liveupdates_command(self, interaction: discord.Interaction, team: str):
         try:
-            response = nhlresponses.get_live_updates(team)
-            await interaction.response.send_message(content='Check')
+            response = nhlresponses.get_live_updates(team, interaction.channel.id)
+            await interaction.response.send_message(content='Not Implemented Yet')
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('LIVEUPDATES', [team], e))
     
