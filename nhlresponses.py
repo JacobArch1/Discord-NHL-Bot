@@ -26,15 +26,15 @@ def get_info():
     return embed
 
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
-    conn = sqlite3.connect('./databases/players.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute('SELECT id FROM players WHERE firstName == ? AND lastName == ?', (first_name, last_name,))
+    c.execute('SELECT id FROM P layers WHERE firstName == ? AND lastName == ?', (first_name, last_name,))
     player = c.fetchone()
     
     if not player:
         close_players = []
         embed = discord.Embed(color=discord.Color.lighter_grey())
-        c.execute('SELECT * FROM players WHERE lastName == ?', (last_name,))
+        c.execute('SELECT * FROM P layers WHERE lastName == ?', (last_name,))
         close_players = c.fetchall()
         embed.add_field(
             name='', 
@@ -149,9 +149,9 @@ def get_standings(season: str) -> discord.Embed:
         standings = nhl.get_current_standings()
         pre_title = 'Current'
     else:
-        conn = sqlite3.connect('./databases/standings.db')
+        conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
-        c.execute('SELECT * FROM standings WHERE id == ?', (season,))
+        c.execute('SELECT * FROM Standings WHERE id == ?', (season,))
         end_date = c.fetchone()
         if not end_date:
             embed = discord.Embed(color=discord.Color.red())
@@ -319,9 +319,9 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     return embed
 
 def get_playoff_bracket() -> discord.Embed:
-    conn = sqlite3.connect('./databases/standings.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM standings ORDER BY rowid DESC LIMIT 1')
+    c.execute('SELECT * FROM Standings ORDER BY rowid DESC LIMIT 1')
     season = c.fetchone()
     c.close()
     brackets = nhl.get_playoff_carousel(season)

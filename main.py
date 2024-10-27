@@ -305,10 +305,10 @@ async def setup(bot):
     await bot.tree.sync()
 
 async def initialize_economy():
-    conn = sqlite3.connect('./databases/economy.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
-    with open('./databases/econtables.sql', 'r') as f:
+    with open('./databases/tables.sql', 'r') as f:
         script = f.read()
     c.executescript(script)
 

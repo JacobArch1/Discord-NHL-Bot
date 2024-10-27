@@ -3,7 +3,7 @@ import datetime
 import sqlite3
 
 def reset_bonus():
-    conn = sqlite3.connect('./databases/economy.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('UPDATE User_Economy SET bonus = 0')
     conn.commit()
@@ -13,7 +13,7 @@ def reset_bonus():
         file.write(log_entry)
 
 def check_game_ended():
-    conn = sqlite3.connect('./databases/economy.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT game_id FROM Current_Games')
     games_list = c.fetchall()
@@ -101,9 +101,8 @@ def get_todays_games(conn):
         file.write(log_entry)
 
 def fetch_players(season: int):
-    conn = sqlite3.connect('./databases/players.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS players (id INTEGER PRIMARY KEY, firstName TEXT, lastName TEXT)''')
     conn.commit()
     for team in nhl.teams:
         results = nhl.get_team_roster_by_season(team, season)
@@ -115,11 +114,11 @@ def fetch_players(season: int):
         all_players_info = forwards_info + defensemen_info + goalies_info
         for player in all_players_info:
             c = conn.cursor()
-            c.execute('''SELECT * FROM players WHERE id = ?''', (player['id'],))
+            c.execute('''SELECT * FROM Players WHERE id = ?''', (player['id'],))
             if c.fetchone():
                 continue
             else:
-                c.execute('''INSERT INTO players (id, firstName, lastName) VALUES (?, ?, ?)''', (player['id'], player['firstName'], player['lastName']))
+                c.execute('''INSERT INTO Players (id, firstName, lastName) VALUES (?, ?, ?)''', (player['id'], player['firstName'], player['lastName']))
                 conn.commit()
     conn.close()
     log_entry = f'Recent Players Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
@@ -138,9 +137,9 @@ def extract_player_info(players):
     return extracted_info
 
 def fetch_standings():
-    conn = sqlite3.connect('./databases/standings.db')
+    conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute("DELETE FROM standings")
+    c.execute("DELETE FROM Standings")
     results = nhl.get_standings_for_each_season()
     seasons = results['seasons']
     c = conn.cursor()
@@ -148,7 +147,7 @@ def fetch_standings():
         season_id = season.get('id', 0)
         start_date = season.get('standingsStart', '')
         end_date = season.get('standingsEnd', '')
-        c.execute('''INSERT INTO standings (id, startDate, endDate) VALUES (?, ?, ?)''', (season_id, start_date, end_date))
+        c.execute('''INSERT INTO Standings (id, startDate, endDate) VALUES (?, ?, ?)''', (season_id, start_date, end_date))
         conn.commit()
     conn.close()
     log_entry = f'New Standings Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
