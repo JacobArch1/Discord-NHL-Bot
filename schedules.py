@@ -1,6 +1,7 @@
 import nhl
 import datetime
 import sqlite3
+import discord
 
 def reset_bonus():
     conn = sqlite3.connect('./databases/main.db')
@@ -9,7 +10,7 @@ def reset_bonus():
     conn.commit()
     conn.close()
     log_entry = f'Bonuses have been reset at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
-    with open('./logs/schedulelog.txt', 'a') as file:
+    with open('./logs/log.txt', 'a') as file:
         file.write(log_entry)
 
 def check_game_ended():
@@ -33,7 +34,7 @@ def check_game_ended():
                 get_todays_games(conn)
             conn.commit()
     conn.close()
- 
+
 def cashout(conn, results: dict, game_id: int, game_type: int):
     c = conn.cursor()
     c.execute('SELECT * FROM Betting_Pool WHERE game_id == ?', (game_id,))
@@ -51,20 +52,21 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
 
     for bet in bets:
         bet_id = bet[0]
-        user_id = bet[3]
-        team = bet[4] 
-        wager = bet[5] 
+        guild_id = bet[3]
+        user_id = bet[4]
+        team = bet[5] 
+        wager = bet[6]
 
         c = conn.cursor()
-        c.execute('SELECT balance FROM User_Economy WHERE user_id = ?', (user_id,))
+        c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
         balance_row = c.fetchone()
         balance = balance_row[0]
 
         bet_won = (team == winner)
         if bet_won:
-            balance += wager * multiplier
+            payout = balance + (wager * multiplier)
 
-        c.execute('UPDATE User_Economy SET balance = ? WHERE user_id = ?', (balance, user_id))
+        c.execute('UPDATE User_Economy SET balance = ? WHERE guild_id = ? AND user_id = ?', (balance, guild_id, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 
@@ -97,7 +99,7 @@ def get_todays_games(conn):
         log_entry = f'No games today, Database cleared at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
     else:
         log_entry = f'Games for {est_date} have been added to the database at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
-    with open('./logs/schedulelog.txt', 'a') as file:
+    with open('./logs/log.txt', 'a') as file:
         file.write(log_entry)
 
 def fetch_players(season: int):
@@ -122,7 +124,7 @@ def fetch_players(season: int):
                 conn.commit()
     conn.close()
     log_entry = f'Recent Players Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
-    with open('./logs/schedulelog.txt', 'a') as file:
+    with open('./logs/log.txt', 'a') as file:
         file.write(log_entry)
 
 def extract_player_info(players):
@@ -151,5 +153,5 @@ def fetch_standings():
         conn.commit()
     conn.close()
     log_entry = f'New Standings Fetched at {datetime.datetime.now().strftime(f'%Y-%m-%d %H:%M:%S')}\n'
-    with open('./logs/schedulelog.txt', 'a') as file:
+    with open('./logs/log.txt', 'a') as file:
         file.write(log_entry)

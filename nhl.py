@@ -68,8 +68,8 @@ def get_data(category: str, params: dict):
 def log_data(url: str, status_code: int):
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime(f'%Y-%m-%d %H:%M:%S')
-    log_entry = f'[{timestamp}] {url} Response:{status_code}\n'
-    with open('./logs/requestlog.txt', 'a') as file:
+    log_entry = f'[{timestamp}] REQUEST ERROR Using URL:{url} Response:{status_code}\n'
+    with open('./logs/log.txt', 'a') as file:
         file.write(log_entry)
 
 # ----- PLAYER INFORMATION ----- #

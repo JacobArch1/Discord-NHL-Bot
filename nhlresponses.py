@@ -28,13 +28,13 @@ def get_info():
 def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute('SELECT id FROM P layers WHERE firstName == ? AND lastName == ?', (first_name, last_name,))
+    c.execute('SELECT id FROM Players WHERE first_name == ? AND last_name == ?', (first_name, last_name,))
     player = c.fetchone()
     
     if not player:
         close_players = []
         embed = discord.Embed(color=discord.Color.lighter_grey())
-        c.execute('SELECT * FROM P layers WHERE lastName == ?', (last_name,))
+        c.execute('SELECT * FROM Players WHERE last_name == ?', (last_name,))
         close_players = c.fetchall()
         embed.add_field(
             name='', 
@@ -324,7 +324,7 @@ def get_playoff_bracket() -> discord.Embed:
     c.execute('SELECT * FROM Standings ORDER BY rowid DESC LIMIT 1')
     season = c.fetchone()
     c.close()
-    brackets = nhl.get_playoff_carousel(season)
+    brackets = nhl.get_playoff_carousel(season[2])
     if 'rounds' not in brackets:
         embed = discord.Embed(color=discord.Color.red())
         embed.add_field(
@@ -517,7 +517,11 @@ def get_game_story(team: str, date: str) -> discord.Embed:
         )
         goals = period['goals']
         if not goals:
-            table.append(f'No goals scored in this period.')
+            embed.add_field(
+                name='',
+                value='No goals scored this period.',
+                inline=False
+            )
         for goal in goals:
             scoring_team = goal['teamAbbrev']['default']
             goal_scorer = goal['name']['default']
@@ -572,7 +576,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if number == 2 else
             '3rd' if number == 3 else
             f'{number}th')
-        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star.get('points', '?')}')
+        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star.get('points', 'X')}')
     table.append('')
     table.reverse()
     table = '\n'.join(table)
