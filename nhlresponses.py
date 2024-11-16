@@ -277,7 +277,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     ]
     for player in team_stats['goalies']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     goalie_table = '\n'.join(table)
     embed.add_field(
@@ -292,7 +292,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     ]
     for player in team_stats['forwards']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     forward_table = '\n'.join(table)
     embed.add_field(
@@ -307,7 +307,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     ]
     for player in team_stats['defensemen']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
-        table.append(f'{player.get('sweaterNumber', '-'):<3}{'[' + player.get('positionCode','-') + ']' + playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
     defense_table = '\n'.join(table)
     embed.add_field(

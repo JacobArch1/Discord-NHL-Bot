@@ -18,7 +18,6 @@ def check_game_ended():
     c = conn.cursor()
     c.execute('SELECT game_id FROM Current_Games')
     games_list = c.fetchall()
-    
     for game in games_list:
         game_id = game[0]
         results = nhl.get_boxscore(game_id)
@@ -27,12 +26,12 @@ def check_game_ended():
         game_type = results['gameType']
         if state == 'FINAL' or state == 'OFF':
             cashout(conn, results, game_id, game_type)
-            c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))
-            c.execute('SELECT * FROM Current_Games')
-            games = c.fetchall()
-            if not games:
-                get_todays_games(conn)
+            c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))            
             conn.commit()
+    c.execute('SELECT * FROM Current_Games')
+    games = c.fetchall()
+    if not games:
+        get_todays_games(conn)
     conn.close()
 
 def cashout(conn, results: dict, game_id: int, game_type: int):
@@ -66,13 +65,14 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
         if bet_won:
             payout = balance + (wager * multiplier)
 
-        c.execute('UPDATE User_Economy SET balance = ? WHERE guild_id = ? AND user_id = ?', (balance, guild_id, user_id))
+        c.execute('UPDATE User_Economy SET balance = ? WHERE guild_id = ? AND user_id = ?', (payout, guild_id, user_id))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 
 def get_todays_games(conn):
     c = conn.cursor()
     c.execute('DELETE FROM Current_Games')
+    conn.commit()
 
     schedule = nhl.get_current_schedule()
     games_today = schedule['gameWeek'][0]['games']

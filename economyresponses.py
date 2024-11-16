@@ -38,8 +38,7 @@ def register(user_id: str, user_name: str, guild_id: str) -> discord.Embed:
 def bonus(user_id: str, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-
-    c.execute('SELECT bonus FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
+    c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     result = c.fetchone()
 
     if result is None:
@@ -52,19 +51,9 @@ def bonus(user_id: str, guild_id: str) -> discord.Embed:
             value='You are not registered in the economy. Use /register to register.', 
             inline=False
         )
-    elif result[0] == 1:
-        embed = discord.Embed(
-            title='Notice', 
-            color=discord.Color.yellow
-        )
-        embed.add_field(
-            name='', 
-            value='Your bonus has already been claimed.', 
-            inline=False
-        )
     else:
         bonus_amount = 500
-        c.execute('UPDATE User_Economy SET bonus = 1, balance = balance + ? WHERE guild_id = ? AND user_id = ?', (bonus_amount, guild_id, user_id,))
+        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (bonus_amount, guild_id, user_id,))
         conn.commit()
 
         embed = discord.Embed(
@@ -284,7 +273,7 @@ def leaderboard(guild_id: str) -> discord.Embed:
 
 def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    results = check_db(conn, user_id, wager, 100)
+    results = check_db(conn, user_id, guild_id, wager, 100)
     if isinstance(results, discord.Embed):
         return results
 
@@ -399,6 +388,11 @@ def coinflip(user_id: int, guild_id: int, side: str, wager: float) -> discord.Em
             color=discord.Color(int('#000000'.lstrip('#'), 16))
         )
         payout = 0
+        
+    c = conn.cursor()
+    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
+    conn.commit()
+    conn.close()
 
     embed.add_field(
         name='', 

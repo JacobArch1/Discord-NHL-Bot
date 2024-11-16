@@ -158,7 +158,7 @@ class Economy(commands.Cog):
     @app_commands.command(name='bonus', description='Get your daily $500 bonus.')
     async def bonus_command(self, interaction: discord.Interaction):
         try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, True):
+            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'bonus'):
                 return
             response = economyresponses.bonus(interaction.user.id, interaction.guild.id)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
@@ -212,7 +212,7 @@ class Economy(commands.Cog):
     @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
     async def slots(self, interaction:discord.Interaction, wager: float):
         try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, False):
+            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'slots'):
                 return
             response = economyresponses.slots(interaction.user.id, interaction.guild.id, wager)
             await interaction.response.send_message(embed=response)
@@ -224,22 +224,22 @@ class Economy(commands.Cog):
     @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
     async def coinflip(self, interaction:discord.Interaction, side: str, wager: float):
         try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, False):
+            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'coinflip'):
                 return
             response = economyresponses.coinflip(interaction.user.id, interaction.guild.id, side, wager)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('COINFLIP', [side, wager, interaction.guild.id], e))
     
-    async def check_cooldown(self, interaction:discord.Interaction, user_id: int, guild_id: int, bonus: bool):
+    async def check_cooldown(self, interaction:discord.Interaction, user_id: int, guild_id: int, command: str):
         current_time = time.time()
-        key = [user_id, guild_id]
+        key = (user_id, guild_id, command)
         if key in self.cooldowns and current_time < self.cooldowns[key]:
             remaining_time = round(self.cooldowns[key] - current_time, 1)
             embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} seconds', color=discord.Color.dark_gray())
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return True
-        if bonus:
+        if command == 'bonus':
             self.cooldowns[key] = current_time + 86400
         else:
             self.cooldowns[key] = current_time + 5
