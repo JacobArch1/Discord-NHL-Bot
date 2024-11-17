@@ -81,6 +81,7 @@ def get_todays_games(conn):
         game_type = game['gameType']
         away_team = game['awayTeam']['abbrev']
         home_team = game['homeTeam']['abbrev']
+        game_state = game['gameState']
 
         dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
         updated_datetime_obj = dt - datetime.timedelta(hours=4)
@@ -88,8 +89,7 @@ def get_todays_games(conn):
         est_date = str(updated_datetime_obj.date())
         est_time = str(updated_datetime_obj.time())
 
-        c.execute('SELECT * FROM Current_Games WHERE game_id = ?', (game['id'],))
-        if c.fetchone() is None:
+        if game_state not in ['OFF', 'FINAL']:
             c.execute(
                 'INSERT INTO Current_Games (game_id, game_type, away_team, home_team, start_date, start_time) VALUES (?, ?, ?, ?, ?, ?)',
                 (game_id, game_type, away_team, home_team, est_date, est_time)

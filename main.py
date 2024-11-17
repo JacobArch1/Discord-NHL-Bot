@@ -175,7 +175,7 @@ class Economy(commands.Cog):
 
     @app_commands.command(name='placebet', description='Bet on which team will win their game today. Bets won\'t be accepted 10 minutes before puckdrop.')
     @app_commands.describe(team='Bet on which team will win. Use the three letter abbreviation.')
-    @app_commands.describe(wager='Place your wager. Minimum $1')
+    @app_commands.describe(wager='Place your wager. Minimum $10')
     async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
         try:
             response = economyresponses.placebet(interaction.user.id, interaction.guild.id, team.upper(), wager)
@@ -209,27 +209,41 @@ class Economy(commands.Cog):
             await interaction.response.send_message(embed=await return_error('LEADERBOARD', [interaction.guild.id], e))
     
     @app_commands.command(name='slots', description='Gamble all your money away. :D')
-    @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
+    @app_commands.describe(wager='Enter your wager, Minimum $10 Bet.')
     async def slots(self, interaction:discord.Interaction, wager: float):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'slots'):
                 return
             response = economyresponses.slots(interaction.user.id, interaction.guild.id, wager)
-            await interaction.response.send_message(embed=response)
+            await interaction.response.send_message(embed=response, delete_after=30)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('SLOTS', [wager, interaction.guild.id], e))
 
     @app_commands.command(name='coinflip', description='Gamble some of your money away. :)')
     @app_commands.describe(side='H or T')
-    @app_commands.describe(wager='Enter your wager, Minimum $100 Bet.')
+    @app_commands.describe(wager='Enter your wager, Minimum $10 Bet.')
     async def coinflip(self, interaction:discord.Interaction, side: str, wager: float):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'coinflip'):
                 return
             response = economyresponses.coinflip(interaction.user.id, interaction.guild.id, side, wager)
-            await interaction.response.send_message(embed=response)
+            await interaction.response.send_message(embed=response, delete_after=30)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('COINFLIP', [side, wager, interaction.guild.id], e))
+        
+    @app_commands.command(name='roulette', description='Gamble every dime you own. :D')
+    @app_commands.describe(color='R or B.')
+    @app_commands.describe(color_wager='1 to 1 Payout.')
+    @app_commands.describe(number='Pick a number 1-36.')
+    @app_commands.describe(number_wager='11 to 1 Payout.')
+    async def roulette(self, interaction:discord.Interaction, color: Optional[str], color_wager: Optional[float], number: Optional[int], number_wager: Optional[float]):
+        try:
+            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'roulette'):
+                return
+            response = economyresponses.roulette(interaction.user.id, interaction.guild.id, color, color_wager, number, number_wager)
+            await interaction.response.send_message(embed=response, delete_after=30)
+        except Exception as e:
+            await interaction.response.send_message(embed=await return_error('ROULETTE', [color, color_wager, number, number_wager, interaction.guild.id], e))
     
     async def check_cooldown(self, interaction:discord.Interaction, user_id: int, guild_id: int, command: str):
         current_time = time.time()

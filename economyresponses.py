@@ -130,7 +130,7 @@ def placebet(user_id: int, guild_id: str, team: str, wager: float) -> discord.Em
             inline=False
         )
         return embed
-    results = check_db(conn, user_id, guild_id, wager, 1)
+    results = check_db(conn, user_id, guild_id, wager, 10)
     if isinstance(results, discord.Embed):
         return results
     c.execute('SELECT user_id FROM Betting_Pool WHERE guild_id = ? AND user_id = ? AND game_id = ?', (guild_id, user_id, game[1],))
@@ -273,12 +273,12 @@ def leaderboard(guild_id: str) -> discord.Embed:
 
 def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    results = check_db(conn, user_id, guild_id, wager, 100)
+    results = check_db(conn, user_id, guild_id, wager, 10)
     if isinstance(results, discord.Embed):
         return results
 
     symbols = ['🍒', '🍋', '🍊', '🍎', '💎', '💰']
-    weights = [0.63, 0.58, 0.53 , 0.46, 0.37, 0.10]
+    weights = [0.25, 0.10, 0.03 , 0.014, 0.005, 0.001]
 
     spin = random.choices(symbols, weights=weights, k=3)
 
@@ -288,31 +288,31 @@ def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
                 title='Congrats!', 
                 color=discord.Color.green()
             )
-            payout = wager * 2
+            payout = wager * 4
         elif spin[0] == '🍋':
             embed = discord.Embed(
                 title='Congrats!', 
                 color=discord.Color.yellow()
             )
-            payout = wager * 5
+            payout = wager * 10
         elif spin[0] == '🍊':
             embed = discord.Embed(
                 title='Congrats!', 
                 color=discord.Color.orange()
             )
-            payout = wager * 7
+            payout = wager * 30
         elif spin[0] == '🍎':
             embed = discord.Embed(
                 title='Congrats!', 
                 color=discord.Color.red()
             )
-            payout = wager * 10
+            payout = wager * 65
         elif spin[0] == '💎':
             embed = discord.Embed(
                 title='JACKPOT!!!!!', 
                 color=discord.Color.teal()
             )
-            payout = wager * 50
+            payout = wager * 250
         elif spin[0] == '💰':
             embed = discord.Embed(
                 title='SUPER JACKPOT!!!!!', 
@@ -325,13 +325,13 @@ def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
                 title='Close...', 
                 color=discord.Color(int('#BCF6EA'.lstrip('#'), 16))
             )
-            payout = wager * 10
+            payout = wager * 50
         elif (spin[0] == '💰' and (spin[1] == '💰' or spin[2] == '💰')) or (spin[1] == '💰' and spin[2] == '💰'):
             embed = discord.Embed(
                 title='Close...', 
                 color=discord.Color(int('#FAEDB7'.lstrip('#'), 16))
             )
-            payout = wager * 50
+            payout = wager * 100
         else:
             embed = discord.Embed(
                 title='Close...', 
@@ -358,7 +358,7 @@ def slots(user_id: int, guild_id: int, wager: float) -> discord.Embed:
 
 def coinflip(user_id: int, guild_id: int, side: str, wager: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    results = check_db(conn, user_id, guild_id, wager, 100)
+    results = check_db(conn, user_id, guild_id, wager, 10)
     if isinstance(results, discord.Embed):
         return results
     elif side not in ['H', 'T']:
@@ -381,13 +381,13 @@ def coinflip(user_id: int, guild_id: int, side: str, wager: float) -> discord.Em
             title='Congrats!', 
             color=discord.Color.green()
         )
-        payout = wager * 1.15
+        payout = wager * 1.50
     else:
         embed = discord.Embed(
             title='Try Again!', 
             color=discord.Color(int('#000000'.lstrip('#'), 16))
         )
-        payout = 0
+        payout = wager * 0.5
         
     c = conn.cursor()
     c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
@@ -397,6 +397,96 @@ def coinflip(user_id: int, guild_id: int, side: str, wager: float) -> discord.Em
     embed.add_field(
         name='', 
         value=f'🪙 = {coin_flip[0]}', inline=False
+    )
+    embed.set_footer(text=f'Payout: ${round(payout, 2)}')
+    return embed
+
+def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number: int, number_wager: float):
+    param_error = False
+    if color is None and number is None:
+        param_error = True
+        message = 'Select at least one category to bet on.' 
+    elif color is not None and color_wager is None:
+        param_error = True
+        message = 'Provide a wager for your selected color.'
+    elif number is not None and number_wager is None:
+        param_error = True
+        message = 'Provide a wager for your selected number.'
+    elif number_wager is not None and number is None:
+        param_error = True
+        message = 'Provide a number.'
+    elif color_wager is not None and color is None:
+        param_error = True
+        message = 'Provide a color.'
+    elif color is not None and color not in ['R', 'B']:
+        param_error = True
+        message = 'Please enter \'R\' or \'B\' for your color.'
+    if number is not None and not (1 <= number <= 36):
+        param_error = True
+        message = 'Number must be between 1 and 36.'
+    if param_error:
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value=message, 
+            inline=False
+        )
+        return embed
+    
+    min_wager = 0
+    wager = 0
+    if color_wager is not None:
+        wager += color_wager
+        min_wager += 10
+    if number_wager is not None:
+        wager += number_wager
+        min_wager += 10
+    conn = sqlite3.connect('./databases/main.db')
+    results = check_db(conn, user_id, guild_id, wager, min_wager)
+    if isinstance(results, discord.Embed):
+        return results
+    
+    reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
+    blacks = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
+    
+    ball = random.randint(1, 36)
+    if ball in reds:
+        ball_color = 'R'
+        symbol = '🔴'
+    if ball in blacks:
+        ball_color = 'B'
+        symbol = '⚫'
+        
+    payout = 0
+    if color == ball_color:
+        embed = discord.Embed(
+            title='Congrats!', 
+            color=discord.Color.green()
+        )
+        payout += color_wager * 2
+    if number == ball:
+        embed = discord.Embed(
+            title='CONGRATS!', 
+            color=discord.Color.gold()
+        )
+        payout += color_wager * 10
+    if payout == 0:
+        embed = discord.Embed(
+            title='Try Again!', 
+            color=discord.Color(int('#000000'.lstrip('#'), 16))
+        )
+    c = conn.cursor()
+    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
+    conn.commit()
+    conn.close()
+    
+    embed.add_field(
+        name='',
+        value=f'{symbol}{ball}',
+        inline=False
     )
     embed.set_footer(text=f'Payout: ${round(payout, 2)}')
     return embed

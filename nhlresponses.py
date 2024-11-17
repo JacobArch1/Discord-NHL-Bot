@@ -15,13 +15,17 @@ def get_info():
         inline=False
     )
     embed.add_field(
-        name='Leader Categories', 
+        name='Known Leader Categories', 
         value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', 
         inline=False
     )
     embed.add_field(
         name='Slots Payouts', 
-        value=f'\n🍒 - 2x\n🍋 - 5x\n🍎 - 10x\n💎 - 50x\n💰 - 100x\n\nClose Wins\n\tw/ 2x 💎 - 10x \n\tw/ 2x 💰 - 50x\n\t w/ Other - 0.5x'
+        value=f'\n🍒 - 4x\n🍋 - 10x\n🍊- 30x\n🍎 - 65x\n💎 - 250x\n💰 - 1000x\n\nClose Wins\n\tw/ 2x 💎 - 50x \n\tw/ 2x 💰 - 100x\n\t w/ Other - 0.5x'
+    )
+    embed.add_field(
+        name='Roulette Payouts',
+        value=f'Color Match (🔴/⚫) - 2x\nNumber Match - 10x'
     )
     return embed
 
