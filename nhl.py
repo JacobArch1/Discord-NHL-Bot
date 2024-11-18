@@ -55,7 +55,7 @@ def connect_endpoint(endpoint: str):
     if response.status_code == 200:
         return response.json(), None
     else:
-        log_data(url, response.status_code)
+        log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}\n')
         return None, response.status_code
 
 def get_data(category: str, params: dict):
@@ -65,12 +65,11 @@ def get_data(category: str, params: dict):
         return {'error': f'Request failed with status code {error_code}'}
     return data
 
-def log_data(url: str, status_code: int):
+def log_data(message: str):
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime(f'%Y-%m-%d %H:%M:%S')
-    log_entry = f'[{timestamp}] REQUEST ERROR Using URL:{url} Response:{status_code}\n'
     with open('./logs/log.txt', 'a') as file:
-        file.write(log_entry)
+        file.write(f'{message} | AT {timestamp}\n')
 
 # ----- PLAYER INFORMATION ----- #
 def get_game_log(player: int, season: int, game_type: int):

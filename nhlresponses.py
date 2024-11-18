@@ -11,7 +11,7 @@ def get_info():
     )
     embed.add_field(
         name='Betting Payouts', 
-        value=f'```Preseason Game 1.25x\nRegular Season Game 2.25x\nPlayoff Game 3.25x```', 
+        value=f'```Preseason Game 1.25x\nRegular Season Game 2x\nPlayoff Game 3x```', 
         inline=False
     )
     embed.add_field(
@@ -21,7 +21,7 @@ def get_info():
     )
     embed.add_field(
         name='Slots Payouts', 
-        value=f'\n🍒 - 4x\n🍋 - 10x\n🍊- 30x\n🍎 - 65x\n💎 - 250x\n💰 - 1000x\n\nClose Wins\n\tw/ 2x 💎 - 50x \n\tw/ 2x 💰 - 100x\n\t w/ Other - 0.5x'
+        value=f'\n🍒 - 1.2x\n🍋 - 1.5x\n🍊- 2x\n🍎 - 3x\n💎 - 10x\n💰 - 50x\n\nClose Wins\n\tw/ 2x 💎 - 2x \n\tw/ 2x 💰 - 10x\n\t w/ Other - 0.05x'
     )
     embed.add_field(
         name='Roulette Payouts',
