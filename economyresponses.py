@@ -4,7 +4,7 @@ import sqlite3
 import discord
 import random
 
-def register(user_id: str, user_name: str, guild_id: str) -> discord.Embed:
+def register(user_id: int, user_name: str, guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -35,7 +35,7 @@ def register(user_id: str, user_name: str, guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def bonus(user_id: str, guild_id: str) -> discord.Embed:
+def bonus(user_id: int, guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -52,7 +52,7 @@ def bonus(user_id: str, guild_id: str) -> discord.Embed:
             inline=False
         )
     else:
-        bonus_amount = 500
+        bonus_amount = 1000
         c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (bonus_amount, guild_id, user_id,))
         conn.commit()
 
@@ -69,7 +69,40 @@ def bonus(user_id: str, guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def balance(user_id: str, guild_id: str) -> discord.Embed:
+def beg(user_id: int, guild_id: int) -> discord.Embed:
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
+    result = c.fetchone()
+
+    if result is None:
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='You are not registered in the economy. Use /register to register.', 
+            inline=False
+        )
+    
+    beg_amount = random.randint(50, 100)
+    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (beg_amount, guild_id, user_id,))
+    conn.commit()
+    
+    embed = discord.Embed(
+        title='You begged for money.', 
+        color=discord.Color.green()
+    )
+    embed.add_field(
+        name='',
+        value=f'And earned ${beg_amount}. 💵',
+        inline=False
+    )
+    
+    return embed
+
+def balance(user_id: int, guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
@@ -99,7 +132,7 @@ def balance(user_id: str, guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, guild_id: str, team: str, wager: float) -> discord.Embed:
+def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
@@ -162,7 +195,7 @@ def placebet(user_id: int, guild_id: str, team: str, wager: float) -> discord.Em
     )
     return embed
 
-def mybets(user_id: int, guild_id: str) -> discord.Embed:
+def mybets(user_id: int, guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -185,19 +218,50 @@ def mybets(user_id: int, guild_id: str) -> discord.Embed:
         )
         for bet in bets:
             embed.add_field(
-                name=f'Bet Id: {bet[0]}', 
-                value=f'Moneyline: {bet[5]}: ${bet[6]}', 
+                name=f'', 
+                value=f'**{bet[5]}**: ${bet[6]}', 
                 inline=False
             )
 
     conn.close()
     return embed
 
-def removebet(user_id: int, guild_id: str, bet_id: int) -> discord.Embed:
+def bethistory(user_id: int, guild_id: int, user_name: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
-    c.execute('SELECT * FROM Betting_Pool WHERE id = ? AND guild_id = ? AND user_id = ?', (bet_id, guild_id, user_id,))
+    c.execute('SELECT * FROM Bet_History WHERE guild_id = ? AND user_id = ? ORDER BY id DESC LIMIT 10', (guild_id, user_id,))
+    bets = c.fetchall()
+    if not bets:
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='Your history is empty.', 
+            inline=False
+        )
+    else:
+        embed = discord.Embed(
+            title=f'{user_name}\'s Bet History', 
+            color=discord.Color.green()
+        )
+        for bet in bets:
+            embed.add_field(
+                name=f'', 
+                value=f'**{bet[5]}**: ${bet[6]} | Payout: ${bet[7]}', 
+                inline=False
+            )
+
+    conn.close()
+    return embed
+
+def removebet(user_id: int, guild_id: int, team: str) -> discord.Embed:
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+
+    c.execute('SELECT * FROM Betting_Pool WHERE team = ? AND guild_id = ? AND user_id = ?', (team, guild_id, user_id,))
     bet = c.fetchone()
     game_id = bet[1]
 
@@ -331,7 +395,6 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str) -> discord.
     embed = discord.Embed(
         title=f'{user_name} Played Slots',
         color=color,
-        timestamp=datetime.datetime.utcnow()
     )
 
     c = conn.cursor()
@@ -390,7 +453,6 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.
     embed = discord.Embed(
         title=f'{user_name} Flipped a Coin',
         color=color,
-        timestamp=datetime.datetime.utcnow()
     )
     embed.add_field(
         name='', 
@@ -438,9 +500,9 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
         return embed
     
     if color in ['r', 'red']:
-        color = 'Red'
+        color_guess = 'Red'
     elif color in ['b', 'black']:
-        color = 'Black'
+        color_guess = 'Black'
     min_wager = 0
     wager = 0
     wager_title = ''
@@ -472,7 +534,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     payout = 0
     title='Try Again!'
     color=discord.Color(int('#000000'.lstrip('#'), 16))
-    if color == ball_color:
+    if color_guess == ball_color:
         title='Congrats!'
         color=discord.Color.green()
         payout += color_wager * 2
@@ -489,7 +551,6 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     embed = discord.Embed(
         title=f'{user_name} Played Roulette',
         color=color,
-        timestamp=datetime.datetime.utcnow()
     )
     
     embed.add_field(
@@ -506,6 +567,17 @@ def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
     results = check_db(conn, user_id, guild_id, amount, 1)
     if isinstance(results, discord.Embed):
         return results
+    
+    if amount > 100:
+        embed = discord.Embed(
+            title='Error', 
+            color=discord.Color.yellow()
+        )
+        embed.add_field(
+            name='', 
+            value='Max wager is $100.', inline=False
+        )
+        return embed
     
     c = conn.cursor()
     c.execute('SELECT * FROM Jackpot WHERE guild_id = ?', (guild_id,))
@@ -544,11 +616,10 @@ def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
     embed = discord.Embed(
         title=f'{user_name} Tipped The Jackpot',
         color=color,
-        timestamp=datetime.datetime.utcnow()
     )
     embed.add_field(
         name='',
-        value=f'**Amount Tipped:** ${amount} 💸\n**Cashout Odds:** {cashout_odds}%\n\n**Bet Multiplier:** {bet_multiplier}%\n{total_odds}% Total Odds\n\n**----{title}----**\n\n{content}'
+        value=f'**Amount Tipped:** ${amount} 💸\n**Cashout Odds:** {round(cashout_odds,2)}%\n\n**Bet Multiplier:** {round(bet_multiplier,2)}%\n{round(total_odds,2)}% Total Odds\n\n**----{title}----**\n\n{content}'
     )
     embed.set_thumbnail(url='https://cdn0.iconfinder.com/data/icons/st-patrick-s-day-icon-t-event-flat/64/StPatricksDay-Flat-PotofGold-512.png')
     

@@ -35,7 +35,7 @@ class NHL(commands.Cog):
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('INFO', [None], e), ephemeral=True)
 
-    @app_commands.command(name='playerstats', description='Get statistics for a player. Player records span back to 1917')
+    @app_commands.command(name='playerstats', description='Get statistics for a player. Records span back to 1917')
     @app_commands.describe(first_name='Enter first name. Use proper capitalization and special characters where needed')
     @app_commands.describe(last_name='Enter last name. Use proper capitalization and special characters where needed')
     async def playerstats_command(self, interaction: discord.Interaction, first_name: str, last_name: str):
@@ -140,6 +140,16 @@ class Economy(commands.Cog):
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('BONUS', [interaction.user.id, interaction.guild.id], e))
     
+    @app_commands.command(name='beg', description='Earn between $50 to $100')
+    async def beg_command(self, interaction: discord.Interaction):
+        try:
+            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'beg'):
+                return
+            response = economyresponses.beg(interaction.user.id, interaction.guild.id)
+            await interaction.response.send_message(content=interaction.user.mention, embed=response)
+        except Exception as e:
+            await interaction.response.send_message(embed=await return_error('BEG', [interaction.user.id, interaction.guild.id], e))
+    
     @app_commands.command(name='balance', description='Check your current balance.')
     async def balance_command(self, interaction: discord.Interaction):
         try:
@@ -167,13 +177,21 @@ class Economy(commands.Cog):
             await interaction.response.send_message(embed=await return_error('MYBETS', [interaction.user.id, interaction.guild.id], e))
 
     @app_commands.command(name='removebet', description='Remove a bet. Use \'mybets\' to get your bet ID.')
-    @app_commands.describe(bet_id='Enter the bet ID to remove')
-    async def removebet_command(self, interaction: discord.Interaction, bet_id: int):
+    @app_commands.describe(team='Enter which team you want to remove the bet for.')
+    async def removebet_command(self, interaction: discord.Interaction, team: str):
         try:
-            response = economyresponses.removebet(interaction.user.id, interaction.guild.id, bet_id)
+            response = economyresponses.removebet(interaction.user.id, interaction.guild.id, team)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('REMOVEBET', [interaction.user.id, interaction.guild.id, bet_id], e))
+            await interaction.response.send_message(embed=await return_error('REMOVEBET', [interaction.user.id, interaction.guild.id, team], e))
+    
+    @app_commands.command(name='bethistory', description='See the last 10 bets you placed.')
+    async def bethistory_command(self, interaction: discord.Interaction):
+        try:
+            response = economyresponses.bethistory(interaction.user.id, interaction.guild.id, interaction.user.name)
+            await interaction.response.send_message(content=interaction.user.mention, embed=response)
+        except Exception as e:
+            await interaction.response.send_message(embed=await return_error('BETHISTORY', [interaction.user.id, interaction.guild.id], e))
 
     @app_commands.command(name='leaderboard', description='See which server members have the most money.')
     async def leaderboard_command(self, interaction: discord.Interaction):
@@ -235,13 +253,20 @@ class Economy(commands.Cog):
         key = (user_id, guild_id, command)
         if key in self.cooldowns and current_time < self.cooldowns[key]:
             remaining_time = round(self.cooldowns[key] - current_time, 1)
-            embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} seconds', color=discord.Color.dark_gray())
+            if remaining_time > 60:
+                remaining_time = round(remaining_time / 60, 1)
+                unit = 'minutes'
+            else:
+                unit = 'seconds'
+            embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} {unit}', color=discord.Color.dark_gray())
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return True
         if command == 'bonus':
             self.cooldowns[key] = current_time + 86400
         elif command == 'jackpot':
-            self.cooldowns[key] = current_time + 10
+            self.cooldowns[key] = current_time + 1800
+        elif command == 'beg':
+            self.cooldowns[key] = current_time + 120
         else:
             self.cooldowns[key] = current_time + 5
         return False

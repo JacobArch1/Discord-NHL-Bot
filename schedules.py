@@ -48,16 +48,13 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
         team = bet[5] 
         wager = bet[6]
 
-        c = conn.cursor()
-        c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
-        balance_row = c.fetchone()
-        balance = balance_row[0]
-
+        payout = 0
         bet_won = (team == winner)
         if bet_won:
             payout = wager * multiplier
 
-        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (payout, guild_id, user_id))
+        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (payout, guild_id, user_id,))
+        c.execute('INSERT INTO Bet_History (game_id, game_type, user_id, guild_id, team, wager, payout) VALUES (?, ?, ?, ?, ?, ?)', (game_id, game_type, user_id, guild_id, team, wager, payout,))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 
@@ -106,11 +103,11 @@ def fetch_players(season: int):
         all_players_info = forwards_info + defensemen_info + goalies_info
         for player in all_players_info:
             c = conn.cursor()
-            c.execute('''SELECT * FROM Players WHERE id = ?''', (player['id'],))
+            c.execute('SELECT * FROM Players WHERE id = ?', (player['id'],))
             if c.fetchone():
                 continue
             else:
-                c.execute('''INSERT INTO Players (id, firstName, lastName) VALUES (?, ?, ?)''', (player['id'], player['firstName'], player['lastName']))
+                c.execute('INSERT INTO Players (id, firstName, lastName) VALUES (?, ?, ?)', (player['id'], player['firstName'], player['lastName']))
                 conn.commit()
     conn.close()
     nhl.log_data(f'Recent Players Fetched')
@@ -129,7 +126,7 @@ def extract_player_info(players):
 def fetch_standings():
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
-    c.execute("DELETE FROM Standings")
+    c.execute('DELETE FROM Standings')
     results = nhl.get_standings_for_each_season()
     seasons = results['seasons']
     c = conn.cursor()
@@ -137,7 +134,7 @@ def fetch_standings():
         season_id = season.get('id', 0)
         start_date = season.get('standingsStart', '')
         end_date = season.get('standingsEnd', '')
-        c.execute('''INSERT INTO Standings (id, startDate, endDate) VALUES (?, ?, ?)''', (season_id, start_date, end_date))
+        c.execute('INSERT INTO Standings (id, startDate, endDate) VALUES (?, ?, ?)', (season_id, start_date, end_date))
         conn.commit()
     conn.close()
     nhl.log_data(f'New Standings Fetched')

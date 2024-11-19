@@ -429,7 +429,8 @@ def get_live_score(team: str) -> discord.Embed:
     games = results['gamesByDate']
     now = datetime.datetime.now()
     today = now.strftime('%Y-%m-%d')
-
+    scoreboard = None
+    
     for game in games:
         date = game['date']
         game_state = game['games'][0]['gameState']
