@@ -1,7 +1,7 @@
 import sqlite3
 import discord
 
-def wipeuser(guild_id, username):
+def wipeuser(guild_id: int, username: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     user_id = get_id(conn, guild_id, username)
     if isinstance(user_id, discord.Embed):
@@ -25,7 +25,7 @@ def wipeuser(guild_id, username):
     )
     return embed
 
-def addmoney(guild_id, username, money):
+def addmoney(guild_id: int, username: str, money: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     user_id = get_id(conn, guild_id, username)
     if isinstance(user_id, discord.Embed):
@@ -47,7 +47,7 @@ def addmoney(guild_id, username, money):
     )
     return embed
 
-def takemoney(guild_id, username, money):
+def takemoney(guild_id: int, username: str, money: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     user_id = get_id(conn, guild_id, username)
     if isinstance(user_id, discord.Embed):
@@ -69,7 +69,7 @@ def takemoney(guild_id, username, money):
     )
     return embed
 
-def reseteconomy(guild_id):
+def reseteconomy(guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('DELETE FROM Betting_Pool WHERE guild_id = ?', (guild_id,))
@@ -90,7 +90,7 @@ def reseteconomy(guild_id):
     return embed
     
 
-def get_id(conn, guild_id, username) -> int:
+def get_id(conn, guild_id: int, username:str) -> int:
     c = conn.cursor()
     c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, username,))
     user_id = c.fetchone()
