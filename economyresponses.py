@@ -4,7 +4,7 @@ import sqlite3
 import discord
 import random
 
-def register(user_id: int, user_name: str, guild_id: int) -> discord.Embed:
+def register(user_id: int, user_name: str, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -14,16 +14,24 @@ def register(user_id: int, user_name: str, guild_id: int) -> discord.Embed:
             title = 'Error', 
             color = discord.Color.red()
         )
+        embed.set_author(
+            name='Register', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value='You are already registered.', 
             inline=False
         )
     else:
-        c.execute('INSERT INTO User_Economy (guild_id, user_id, balance, user_name) VALUES (?, ?, ?, ?)', (guild_id, user_id, 100, user_name,))
+        c.execute('INSERT INTO User_Economy (guild_id, user_id, balance, user_name) VALUES (?, ?, ?, ?)', (guild_id, user_id, 1000, user_name,))
         embed = discord.Embed(
-            title = 'Registered!', 
+            title = 'Success!', 
             color = discord.Color.green()
+        )
+        embed.set_author(
+            name='Register', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -35,7 +43,7 @@ def register(user_id: int, user_name: str, guild_id: int) -> discord.Embed:
     conn.close()
     return embed
 
-def bonus(user_id: int, guild_id: str) -> discord.Embed:
+def bonus(user_id: int, guild_id: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -45,6 +53,10 @@ def bonus(user_id: int, guild_id: str) -> discord.Embed:
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Bonus', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -60,6 +72,10 @@ def bonus(user_id: int, guild_id: str) -> discord.Embed:
             title='Claimed!', 
             color=discord.Color.green()
         )
+        embed.set_author(
+            name='Bonus', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value=f'You claimed your daily ${bonus_amount} bonus.', 
@@ -69,7 +85,7 @@ def bonus(user_id: int, guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def beg(user_id: int, guild_id: int) -> discord.Embed:
+def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -79,6 +95,10 @@ def beg(user_id: int, guild_id: int) -> discord.Embed:
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Beg', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -94,6 +114,10 @@ def beg(user_id: int, guild_id: int) -> discord.Embed:
         title='You begged for money.', 
         color=discord.Color.green()
     )
+    embed.set_author(
+        name='Beg', 
+        icon_url=avatar
+    )
     embed.add_field(
         name='',
         value=f'And earned ${beg_amount}. 💵',
@@ -102,7 +126,7 @@ def beg(user_id: int, guild_id: int) -> discord.Embed:
     
     return embed
 
-def balance(user_id: int, guild_id: int) -> discord.Embed:
+def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
@@ -113,6 +137,10 @@ def balance(user_id: int, guild_id: int) -> discord.Embed:
             title='Error', 
             color=discord.Color.yellow()
         )
+        embed.set_author(
+            name='Balance', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value='You are not registered in the economy. Use /register to register.', 
@@ -120,8 +148,12 @@ def balance(user_id: int, guild_id: int) -> discord.Embed:
         )
     else:
         embed = discord.Embed(
-            title='Balance', 
+            title='', 
             color=discord.Color.green()
+        )
+        embed.set_author(
+            name='Balance', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -132,7 +164,7 @@ def balance(user_id: int, guild_id: int) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: str) -> discord.Embed:
+def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
@@ -143,6 +175,10 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
         embed = discord.Embed(
             title='Notice', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Bet', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -156,6 +192,10 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
         embed = discord.Embed(
             title='Notice', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Bet', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -173,6 +213,10 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
             title='Error', 
             color=discord.Color.yellow()
         )
+        embed.set_author(
+            name='Bet', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value='You have already placed a bet on this game.', 
@@ -185,17 +229,21 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     c.execute('INSERT INTO Betting_Pool (game_id, guild_id, game_type, user_id, team, wager) VALUES (?, ?, ?, ?, ?, ?)', (game_id, guild_id, game_type, user_id, team, wager,))
     conn.commit()
     embed = discord.Embed(
-        title='Success!', 
+        title=f'{user_name} Placed a bet.', 
         color=discord.Color.green()
+    )
+    embed.set_author(
+        name='Bet', 
+        icon_url=avatar
     )
     embed.add_field(
         name='', 
-        value='Your bet has been placed.', 
+        value=f'${round(wager,2)} on {team.upper()}', 
         inline=False
     )
     return embed
 
-def mybets(user_id: int, guild_id: int) -> discord.Embed:
+def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -206,6 +254,10 @@ def mybets(user_id: int, guild_id: int) -> discord.Embed:
             title='Notice', 
             color=discord.Color.yellow()
         )
+        embed.set_author(
+            name='Bets', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value='You do not have any bets placed.', 
@@ -213,8 +265,12 @@ def mybets(user_id: int, guild_id: int) -> discord.Embed:
         )
     else:
         embed = discord.Embed(
-            title='My Bets', 
+            title='Your active bets.', 
             color=discord.Color.green()
+        )
+        embed.set_author(
+            name='Bets', 
+            icon_url=avatar
         )
         for bet in bets:
             embed.add_field(
@@ -226,7 +282,7 @@ def mybets(user_id: int, guild_id: int) -> discord.Embed:
     conn.close()
     return embed
 
-def bethistory(user_id: int, guild_id: int, user_name: str) -> discord.Embed:
+def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -236,6 +292,10 @@ def bethistory(user_id: int, guild_id: int, user_name: str) -> discord.Embed:
         embed = discord.Embed(
             title='Notice', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Bet History', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -247,6 +307,10 @@ def bethistory(user_id: int, guild_id: int, user_name: str) -> discord.Embed:
             title=f'{user_name}\'s Bet History', 
             color=discord.Color.green()
         )
+        embed.set_author(
+            name='Bet History', 
+            icon_url=avatar
+        )
         for bet in bets:
             embed.add_field(
                 name=f'', 
@@ -257,7 +321,7 @@ def bethistory(user_id: int, guild_id: int, user_name: str) -> discord.Embed:
     conn.close()
     return embed
 
-def removebet(user_id: int, guild_id: int, team: str) -> discord.Embed:
+def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -277,6 +341,10 @@ def removebet(user_id: int, guild_id: int, team: str) -> discord.Embed:
             title='Error', 
             color=discord.Color.red()
         )
+        embed.set_author(
+            name='Remove Bet', 
+            icon_url=avatar
+        )
         embed.add_field(
             name='', 
             value='Could not find bet.', 
@@ -286,6 +354,10 @@ def removebet(user_id: int, guild_id: int, team: str) -> discord.Embed:
         embed = discord.Embed(
             title='Notice', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Remove Bet', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -300,6 +372,10 @@ def removebet(user_id: int, guild_id: int, team: str) -> discord.Embed:
         embed = discord.Embed(
             title='Success!', 
             color=discord.Color.green()
+        )
+        embed.set_author(
+            name='Remove Bet', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -335,7 +411,7 @@ def leaderboard(guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def slots(user_id: int, guild_id: int, wager: float, user_name: str) -> discord.Embed:
+def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, wager, 1)
     if isinstance(results, discord.Embed):
@@ -345,6 +421,10 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str) -> discord.
         embed = discord.Embed(
             title='Wager must be $1, $5, $10, $100',
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Slots', 
+            icon_url=avatar
         )
         return embed
 
@@ -396,7 +476,10 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str) -> discord.
         title=f'{user_name} Played Slots',
         color=color,
     )
-
+    embed.set_author(
+        name='Slots', 
+        icon_url=avatar
+    )
     c = conn.cursor()
     c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
     conn.commit()
@@ -409,7 +492,7 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str) -> discord.
     embed.set_thumbnail(url='https://icons.iconarchive.com/icons/microsoft/fluentui-emoji-3d/512/Slot-Machine-3d-icon.png')
     return embed
 
-def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.Embed:
+def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, 10, 10)
     if isinstance(results, discord.Embed):
@@ -420,6 +503,10 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Coin Flip', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -432,7 +519,7 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.
         side = 'Heads'
     else:
         side = 'Tails'
-    
+     
     symbols = ['Heads', 'Tails']
     coin_flip = random.choices(symbols, k=1)
 
@@ -454,6 +541,10 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.
         title=f'{user_name} Flipped a Coin',
         color=color,
     )
+    embed.set_author(
+        name='Coin Flip', 
+        icon_url=avatar
+    )
     embed.add_field(
         name='', 
         value=f'Coin Landed On: **{coin_flip[0]}**\nYou Picked: **{side}**\n\n**----{title}----**\n**Payout:** ${payout}💵', 
@@ -462,7 +553,7 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str) -> discord.
     embed.set_thumbnail(url='https://www.iconpacks.net/icons/1/free-coin-icon-794-thumb.png')
     return embed
 
-def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number: int, number_wager: float, user_name: str) -> discord.Embed:
+def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number: int, number_wager: float, user_name: str, avatar: str) -> discord.Embed:
     param_error = False
     if color is not None:
         color = color.lower()
@@ -491,6 +582,10 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Roulette', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -530,7 +625,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     if ball in blacks:
         ball_color = 'Black'
         symbol = '⬛'
-        
+    
     payout = 0
     title='Try Again!'
     color=discord.Color(int('#000000'.lstrip('#'), 16))
@@ -542,7 +637,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
         title='CONGRATS!'
         color=discord.Color.gold()
         payout += color_wager * 10
-        
+    
     c = conn.cursor()
     c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
     conn.commit()
@@ -552,7 +647,10 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
         title=f'{user_name} Played Roulette',
         color=color,
     )
-    
+    embed.set_author(
+        name='Roulette', 
+        icon_url=avatar
+    )
     embed.add_field(
         name='',
         value=f'Ball Landed On: {symbol}**[{ball}]** \n\n**Wager:** 💸\n{wager_title}\n\n**----{title}----**\n\n**Payout:** ${payout}💵',
@@ -562,7 +660,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     embed.set_thumbnail(url='https://cdn-icons-png.flaticon.com/512/3425/3425938.png')
     return embed
 
-def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
+def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, amount, 1)
     if isinstance(results, discord.Embed):
@@ -572,6 +670,10 @@ def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.yellow()
+        )
+        embed.set_author(
+            name='Jackpot', 
+            icon_url=avatar
         )
         embed.add_field(
             name='', 
@@ -584,7 +686,7 @@ def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
     jackpot = c.fetchone()
     
     if jackpot is None:
-        c.execute('INSERT INTO Jackpot (guild_id, pot, cashout_odds, num_tips, last_tipper, last_tipper_amount) VALUES (?, ?, ?, ?, ?, ?)', (guild_id, 10000, 0.1, 0, 'Nobody Yet', 0.0,))
+        c.execute('INSERT INTO Jackpot (guild_id, pot, cashout_odds, num_tips, last_tipper, last_tipper_amount) VALUES (?, ?, ?, ?, ?, ?)', (guild_id, 5000, 0.1, 0, 'Nobody Yet', 0.0,))
         conn.commit()
         c.execute('SELECT * FROM Jackpot WHERE guild_id = ?', (guild_id,))
         jackpot = c.fetchone()
@@ -616,6 +718,10 @@ def jackpot(guild_id, user_id, amount, user_name) -> discord.Embed:
     embed = discord.Embed(
         title=f'{user_name} Tipped The Jackpot',
         color=color,
+    )
+    embed.set_author(
+        name='Jackpot', 
+        icon_url=avatar
     )
     embed.add_field(
         name='',

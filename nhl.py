@@ -5,8 +5,8 @@ BASE_URL = 'https://api-web.nhle.com'
 
 #Current Lineup
 teams = {'ANA', 'ARI', 'BOS', 'BUF', 'CAR', 'CBJ', 'CGY', 'CHI', 'COL', 'DAL', 'DET', 'EDM', 
-         'FLA', 'LAK', 'MIN', 'MTL', 'NJD', 'NSH', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT', 'SEA',  
-         'SJS', 'STL', 'TBL', 'TOR', 'VAN', 'VGK', 'WPG', 'WSH'}
+         'FLA', 'LAK', 'MIN', 'MTL', 'NJD', 'NSH', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT 5', 'SEA',  
+         'SJS', 'STL', 'TBL 14', 'TOR', 'VAN', 'VGK', 'WPG', 'WSH'}
 
 #No longer in the league
 oldteams = {'AFM', 'ATL', 'BRK', 'CGS', 'CLE', 'CLR', 'DCG', 'DFL', 'HAM', 'HFD', 'KCS', 'MMR', 

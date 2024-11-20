@@ -1,8 +1,9 @@
 import nhl
 import datetime
 import sqlite3
+import eventresponse
 
-def check_game_ended():
+async def update_games(bot):
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT game_id FROM Current_Games')
@@ -17,6 +18,12 @@ def check_game_ended():
             cashout(conn, results, game_id, game_type)
             c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))            
             conn.commit()
+        else:
+            c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
+            results = c.fetchall()
+            channel_ids = [row[4] for row in results]
+            await eventresponse.send_events(game_id, channel_ids, bot)
+            
     c.execute('SELECT * FROM Current_Games')
     games = c.fetchall()
     if not games:
@@ -54,7 +61,7 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
             payout = wager * multiplier
 
         c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (payout, guild_id, user_id,))
-        c.execute('INSERT INTO Bet_History (game_id, game_type, user_id, guild_id, team, wager, payout) VALUES (?, ?, ?, ?, ?, ?)', (game_id, game_type, user_id, guild_id, team, wager, payout,))
+        c.execute('INSERT INTO Bet_History (game_id, game_type, user_id, guild_id, team, wager, payout) VALUES (?, ?, ?, ?, ?, ?, ?)', (game_id, game_type, user_id, guild_id, team, wager, payout,))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 
@@ -89,7 +96,7 @@ def get_todays_games(conn):
     else:
         nhl.log_data(f'Games for {est_date} have been added to the database')
 
-def fetch_players(season: int):
+async def fetch_players(season: int):
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     conn.commit()
@@ -123,7 +130,7 @@ def extract_player_info(players):
         extracted_info.append(player_info)
     return extracted_info
 
-def fetch_standings():
+async def fetch_standings():
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('DELETE FROM Standings')

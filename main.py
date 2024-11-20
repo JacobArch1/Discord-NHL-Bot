@@ -125,17 +125,17 @@ class Economy(commands.Cog):
     @app_commands.command(name='register', description='Sign up for this servers economy.')
     async def register_command(self, interaction: discord.Interaction):
         try:
-            response = economyresponses.register(interaction.user.id, interaction.user.name, interaction.guild.id)
+            response = economyresponses.register(interaction.user.id, interaction.user.name, interaction.guild.id, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response, ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('REGISTER', [interaction.user.id, interaction.user.name, interaction.guild.id], e), ephemeral=True)
 
-    @app_commands.command(name='bonus', description='Get your daily $500 bonus.')
+    @app_commands.command(name='bonus', description='Get your daily $1,000 bonus.')
     async def bonus_command(self, interaction: discord.Interaction):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'bonus'):
                 return
-            response = economyresponses.bonus(interaction.user.id, interaction.guild.id)
+            response = economyresponses.bonus(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('BONUS', [interaction.user.id, interaction.guild.id], e))
@@ -145,7 +145,7 @@ class Economy(commands.Cog):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'beg'):
                 return
-            response = economyresponses.beg(interaction.user.id, interaction.guild.id)
+            response = economyresponses.beg(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('BEG', [interaction.user.id, interaction.guild.id], e))
@@ -153,7 +153,7 @@ class Economy(commands.Cog):
     @app_commands.command(name='balance', description='Check your current balance.')
     async def balance_command(self, interaction: discord.Interaction):
         try:
-            response = economyresponses.balance(interaction.user.id, interaction.guild.id)
+            response = economyresponses.balance(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('BALANCE', [interaction.user.id , interaction.guild.id], e))
@@ -163,7 +163,7 @@ class Economy(commands.Cog):
     @app_commands.describe(wager='Place your wager. Minimum $10')
     async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
         try:
-            response = economyresponses.placebet(interaction.user.id, interaction.guild.id, team.upper(), wager, interaction.user.name)
+            response = economyresponses.placebet(interaction.user.id, interaction.guild.id, team.upper(), wager, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('PLACEBET', [interaction.user.id, interaction.guild.id, team.upper(), wager], e))
@@ -171,7 +171,7 @@ class Economy(commands.Cog):
     @app_commands.command(name='mybets', description='Check your current bets.')
     async def mybets_command(self, interaction: discord.Interaction):
         try:
-            response = economyresponses.mybets(interaction.user.id, interaction.guild.id)
+            response = economyresponses.mybets(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('MYBETS', [interaction.user.id, interaction.guild.id], e))
@@ -180,7 +180,7 @@ class Economy(commands.Cog):
     @app_commands.describe(team='Enter which team you want to remove the bet for.')
     async def removebet_command(self, interaction: discord.Interaction, team: str):
         try:
-            response = economyresponses.removebet(interaction.user.id, interaction.guild.id, team)
+            response = economyresponses.removebet(interaction.user.id, interaction.guild.id, team, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('REMOVEBET', [interaction.user.id, interaction.guild.id, team], e))
@@ -188,7 +188,7 @@ class Economy(commands.Cog):
     @app_commands.command(name='bethistory', description='See the last 10 bets you placed.')
     async def bethistory_command(self, interaction: discord.Interaction):
         try:
-            response = economyresponses.bethistory(interaction.user.id, interaction.guild.id, interaction.user.name)
+            response = economyresponses.bethistory(interaction.user.id, interaction.guild.id, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(content=interaction.user.mention, embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('BETHISTORY', [interaction.user.id, interaction.guild.id], e))
@@ -207,7 +207,7 @@ class Economy(commands.Cog):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'slots'):
                 return
-            response = economyresponses.slots(interaction.user.id, interaction.guild.id, wager, interaction.user.name)
+            response = economyresponses.slots(interaction.user.id, interaction.guild.id, wager, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('SLOTS', [wager, interaction.guild.id], e))
@@ -218,7 +218,7 @@ class Economy(commands.Cog):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'coinflip'):
                 return
-            response = economyresponses.coinflip(interaction.user.id, interaction.guild.id, side, interaction.user.name)
+            response = economyresponses.coinflip(interaction.user.id, interaction.guild.id, side, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('COINFLIP', [side, interaction.guild.id], e))
@@ -232,7 +232,7 @@ class Economy(commands.Cog):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'roulette'):
                 return
-            response = economyresponses.roulette(interaction.user.id, interaction.guild.id, color, color_wager, number, number_wager, interaction.user.name)
+            response = economyresponses.roulette(interaction.user.id, interaction.guild.id, color, color_wager, number, number_wager, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('ROULETTE', [color, color_wager, number, number_wager, interaction.guild.id], e))
@@ -243,7 +243,7 @@ class Economy(commands.Cog):
         try:
             if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'jackpot'):
                 return
-            response = economyresponses.jackpot(interaction.guild.id, interaction.user.id, amount, interaction.user.name)
+            response = economyresponses.jackpot(interaction.guild.id, interaction.user.id, amount, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('jackpot', [interaction.guild.id, amount], e))
@@ -277,7 +277,7 @@ class Moderator(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def startgame_command(self, interaction: discord.Interaction, team: str):
         try:
-            response = nhlresponses.get_live_updates(team, interaction.channel.id)
+            response = nhlresponses.startgame(team, interaction.channel.id, interaction.guild.id)
             await interaction.response.send_message(embed=response)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('STARTGAME', [team], e))
@@ -348,7 +348,7 @@ class Moderator(commands.Cog):
 class Scheduled(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.check_game_over())
+        self.bot.loop.create_task(self.update_games())
         self.bot.loop.create_task(self.update_tables())
 
     async def update_tables(self):
@@ -358,13 +358,13 @@ class Scheduled(commands.Cog):
             wait_time = (then - now).total_seconds()
             await asyncio.sleep(wait_time)
             season = int(str(now.year) + str(now.year+1))
-            schedules.fetch_players(season)
-            schedules.fetch_standings()
+            await schedules.fetch_players(season)
+            await schedules.fetch_standings()
 
-    async def check_game_over(self):
+    async def update_games(self):
         while True:
-            schedules.check_game_ended()
-            await asyncio.sleep(1 * 60)
+            await schedules.update_games(self.bot)
+            await asyncio.sleep(1 * 5)
 
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')

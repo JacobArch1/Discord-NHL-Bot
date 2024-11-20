@@ -592,5 +592,57 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     )
     return embed
 
-def get_live_updates():
-    return 0
+def startgame(team: str, channel_id: int, guild_id: int):
+    results = nhl.get_team_scoreboard(team)
+    games = results['gamesByDate']
+    now = datetime.datetime.now()
+    today = now.strftime('%Y-%m-%d')
+    game_id = 0
+    
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    
+    for game in games:
+        date = game['date']
+        game_state = game['games'][0]['gameState']
+
+        if game_state == 'LIVE' or date == today:
+            game_id = game['games'][0]['id']
+            break
+    if game_id == 0:
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow(), 
+            description='This team is not playing today.'
+        )
+        return embed
+    if game_state in ['OFF','FINAL']:
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow(), 
+            description='This game has ended.'
+        )
+        return embed
+    
+    c.execute('SELECT * FROM Update_List WHERE guild_id = ? AND channel_id = ?', (guild_id, channel_id,))
+    result = c.fetchone()
+    
+    if result is not None:
+        embed = discord.Embed(
+            title='Notice', 
+            color=discord.Color.yellow(), 
+            description='This channel is already recieving updates for this game.'
+        )
+        return embed
+    
+    c.execute('INSERT INTO Update_List (guild_id, game_id, game_type, channel_id) VALUES (?, ?, ?, ?)', (guild_id, game_id, 2, channel_id,))
+    conn.commit()
+    conn.close()
+    
+    embed = discord.Embed(
+        title='Done!', 
+        color=discord.Color.green(), 
+        description=f'This channel will begin recieving game updates for {team}.'
+    )
+    
+    return embed
