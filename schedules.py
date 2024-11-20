@@ -26,7 +26,7 @@ async def update_games(bot):
             
     c.execute('SELECT * FROM Current_Games')
     games = c.fetchall()
-    now = datetime.now()
+    now = datetime.datetime.now()
     if not games and now.hour == 12 and now.minute == 0:
         get_todays_games(conn)
     conn.close()
