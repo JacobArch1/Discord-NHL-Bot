@@ -624,7 +624,7 @@ def startgame(team: str, channel_id: int, guild_id: int):
         )
         return embed
     
-    c.execute('SELECT * FROM Update_List WHERE guild_id = ? AND channel_id = ?', (guild_id, channel_id,))
+    c.execute('SELECT * FROM Update_List WHERE guild_id = ? AND channel_id = ? AND game_id = ?', (guild_id, channel_id, game_id, ))
     result = c.fetchone()
     
     if result is not None:

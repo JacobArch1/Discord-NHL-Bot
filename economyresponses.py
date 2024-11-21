@@ -731,6 +731,29 @@ def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: 
     
     return embed
 
+def checkjackpot(guild_name: str, guild_id: int) -> discord.Embed:
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM Jackpot WHERE guild_id = ?', (guild_id,))
+    jackpot = c.fetchone()
+    
+    cashout_odds = round(jackpot[3], 2)
+    amount = round(jackpot[2], 2)
+    last_tipper = jackpot[5]
+    last_tipper_amount = round(jackpot[6], 2)
+    
+    embed = discord.Embed(
+        title=f'{guild_name} Jackpot',
+        color=discord.Color(int('#000000'.lstrip('#'), 16))
+    )
+    embed.add_field(
+        name='',
+        value=f'**Cashout Odds:** {cashout_odds}%\n**Amount:** ${amount} 💵\n\nLast Tipper: {last_tipper} tipped ${last_tipper_amount} 💸'
+    )
+    embed.set_thumbnail(url='https://cdn0.iconfinder.com/data/icons/st-patrick-s-day-icon-t-event-flat/64/StPatricksDay-Flat-PotofGold-512.png')
+    
+    return embed
+
 def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) -> bool:
     c = conn.cursor()
     c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))

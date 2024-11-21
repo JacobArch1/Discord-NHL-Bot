@@ -246,7 +246,15 @@ class Economy(commands.Cog):
             response = economyresponses.jackpot(interaction.guild.id, interaction.user.id, amount, interaction.user.name, interaction.user.display_avatar.url)
             await interaction.response.send_message(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('jackpot', [interaction.guild.id, amount], e))
+            await interaction.response.send_message(embed=await return_error('JACKPOT', [interaction.guild.id, amount], e))
+            
+    @app_commands.command(name='checkjackpot', description='See information on this servers jackpot.')
+    async def checkjackpot(self, interaction:discord.Interaction):
+        try:
+            response = economyresponses.checkjackpot(interaction.guild.name, interaction.guild.id)
+            await interaction.response.send_message(embed=response)
+        except Exception as e:
+            await interaction.response.send_message(embed=await return_error('CHECKJACKPOT', [interaction.guild.id], e))
     
     async def check_cooldown(self, interaction:discord.Interaction, user_id: int, guild_id: int, command: str):
         current_time = time.time()

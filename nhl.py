@@ -4,14 +4,38 @@ import datetime
 BASE_URL = 'https://api-web.nhle.com'
 
 #Current Lineup
-teams = {'ANA', 'ARI', 'BOS', 'BUF', 'CAR', 'CBJ', 'CGY', 'CHI', 'COL', 'DAL', 'DET', 'EDM', 
-         'FLA', 'LAK', 'MIN', 'MTL', 'NJD', 'NSH', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT 5', 'SEA',  
-         'SJS', 'STL', 'TBL 14', 'TOR', 'VAN', 'VGK', 'WPG', 'WSH'}
-
-#No longer in the league
-oldteams = {'AFM', 'ATL', 'BRK', 'CGS', 'CLE', 'CLR', 'DCG', 'DFL', 'HAM', 'HFD', 'KCS', 'MMR', 
-            'MNS', 'MWN', 'NYA', 'OAK', 'PHX', 'PIR', 'QBD', 'QUA', 'QUE', 'SEN', 'SLE', 'TAN', 
-            'TSP', 'UTA', 'WIN', }
+teams = {'ANA' : 'Anaheim Ducks',  
+         'BOS' : 'Boston Bruins', 
+         'BUF' : 'Buffalo Sabres', 
+         'CAR' : 'Carolina Hurricanes', 
+         'CBJ' : 'Columbus Blue Jackets', 
+         'CGY' : 'Calgary Flames', 
+         'CHI' : 'Chicago Blackhawks', 
+         'COL' : 'Colorado Avalanche', 
+         'DAL' : 'Dallas Stars', 
+         'DET' : 'Detroit Red Wings', 
+         'EDM' : 'Edmonton Oilers', 
+         'FLA' : 'Florida Panthers', 
+         'LAK' : 'Los Angeles Kings', 
+         'MIN' : 'Minnesota Wild', 
+         'MTL' : 'Montreal Canadiens', 
+         'NJD' : 'New Jersey Devils', 
+         'NSH' : 'Nashville Predators', 
+         'NYI' : 'New York Islanders', 
+         'NYR' : 'New York Rangers', 
+         'OTT' : 'Ottawa Senators', 
+         'PHI' : 'Philadelphia Flyers', 
+         'PIT' : 'Pittsburgh Penguins',  
+         'SEA' : 'Seattle Kraken',  
+         'SJS' : 'San Jose Sharks', 
+         'STL' : 'St. Louis Blues', 
+         'TBL' : 'Tampa Bay Lightning', 
+         'TOR' : 'Toronto Maple Leafs', 
+         'VAN' : 'Vancouver Canucks', 
+         'VGK' : 'Vegas Golden Knights', 
+         'WPG' : 'Winnipeg Jets', 
+         'WSH' : 'Washington Capitals',
+         'UTA' : 'Utah Hockey Club'}
 
 #Team Colors
 teams_colors = {'ANA': '#F47A38', 

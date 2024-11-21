@@ -9,11 +9,13 @@ async def send_events(game_id: int, update_list: list, bot):
     
     away_team_id = results['awayTeam']['id']
     away_team_abbrev = results['awayTeam']['abbrev']
+    away_score = results['awayTeam']['score']
     away_team = [away_team_id, away_team_abbrev]
     
     home_team_id = results['homeTeam']['id']
     home_team_abbrev = results['homeTeam']['abbrev']
-    home_team = [home_team_id, home_team_abbrev]
+    home_score = results['homeTeam']['score']
+    home_team = {'id': home_team_id, 'abbrev': home_team_abbrev}
     
     events = results['plays']
     
@@ -30,23 +32,25 @@ async def send_events(game_id: int, update_list: list, bot):
     if event_type not in desired_events:
         return
     
-    embed = craft_embed(event, event_type, game_id, away_team, home_team)
+    embed = craft_embed(event, event_type, away_team, home_team, away_score, home_score)
     
     for channel_id in update_list:
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
-        c.execute('SELECT last_event_id FROM Update_List WHERE channel_id = ?', (channel_id, ))
+        c.execute('SELECT last_event_id FROM Update_List WHERE channel_id = ? AND game_id = ?', (channel_id, game_id,))
         last_event_id = c.fetchone()
-        
-        if event_id != last_event_id:
+
+        if event_id != last_event_id[0]:
             channel = bot.get_channel(channel_id)
             if channel:
+                c.execute('UPDATE Update_List SET last_event_id = ? WHERE channel_id = ? AND game_id = ?', (event_id, channel_id, game_id,))
+                conn.commit()
                 await channel.send(embed=embed)
-                
-def craft_embed(event: dict, type: str, game_id: int, away_team: dict, home_team: dict) -> discord.Embed:
+    conn.close()
+
+def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int) -> discord.Embed:
+    event_details = event['details']
     if type in 'goal':
-        event_details = event['details']
-        
         scorer_id = event_details['scoringPlayerId']
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
@@ -55,26 +59,95 @@ def craft_embed(event: dict, type: str, game_id: int, away_team: dict, home_team
         first_name, last_name = 'Unknown', 'Player'
         if result[0] is not None:
             first_name, last_name = result[1], result[2]
+        conn.close()
         
-        team_id = event_details['evenOwnerTeamId']
+        team_id = event_details['eventOwnerTeamId']
         
         scoring_team = '???'
-        if team_id in home_team:
-            scoring_team = home_team[team_id]
-        else:
-            scoring_team = away_team[team_id]
+        if team_id == home_team['id']:
+            scoring_team = home_team['abbrev']
+        elif team_id == away_team['id']:
+            scoring_team = away_team['abbrev']
         
         time_of_goal = event['timeInPeriod']
         
         embed = discord.Embed(
-            title=f'{scoring_team} Goal!',
+            title=f'{nhl.teams.get(scoring_team)} Goal!',
             color=discord.Color(int(nhl.teams_colors.get(scoring_team).lstrip('#'), 16)),
             description=f'Scored by {first_name} {last_name} @ {time_of_goal}'
         )
         
         return embed
+    elif type in ['period-start','period-end']:
+        if type == 'period-start':
+            title = 'Period has started.'
+        else:
+            title = 'Period has ended.'
+        descriptor = event['periodDescriptor']['number']
+        period_num = (
+            '1st' if descriptor == 1 else
+            '2nd' if descriptor == 2 else
+            '3rd' if descriptor == 3 else
+            f'{descriptor}th')
+        embed = discord.Embed(
+            title=f'{period_num} {title}',
+            color=discord.Color(int('#000000'.lstrip('#'), 16)),
+            description=f'-- Score --\n{home_team["abbrev"]}: {home_score}\n{away_team["abbrev"]}: {away_score}'
+        )
+        
+        return embed
+    elif type in ['penalty']:
+        offender_id = event_details['committedByPlayerId']
+        conn = sqlite3.connect('./databases/main.db')
+        c = conn.cursor()
+        c.execute('SELECT * FROM Players WHERE id = ?', (offender_id,))
+        result = c.fetchone()
+        first_name, last_name = 'Unknown', 'Player'
+        if result[0] is not None:
+            first_name, last_name = result[1], result[2]
+        conn.close()
+        
+        team_id = event_details['eventOwnerTeamId']
+        
+        offending_team = '???'
+        if team_id == home_team['id']:
+            offending_team = home_team['abbrev']
+        elif team_id == away_team['id']:
+            offending_team = away_team['abbrev']
+        
+        time_of_penalty = event['timeInPeriod']
+        penalty_type = event_details.get('descKey','???').replace('-', ' ')
+        duration = event_details.get('')
+        
+        embed = discord.Embed(
+            title=f'{nhl.teams.get(scoring_team)} Penalty.',
+            color=discord.Color(int(nhl.teams_colors.get(offending_team).lstrip('#'), 16)),
+            description=f'{first_name} {last_name} for {penalty_type} @ {time_of_penalty}\nDuration: {duration} minutes.'
+        )
+        
+        return embed
+    elif type in ['game-end']:
+        winning_team = away_team['abbrev']
+        if home_score > away_score:
+            winning_team = home_team['abbrev']
+        
+        descriptor = event['periodDescriptor']['periodType']
+        period_type = (
+            'regulation' if descriptor == 'REG' else
+            'overtime' if descriptor == 'OT' else
+            'the shootout' if descriptor == 'SO' else
+            f'???')
+        
+        embed = discord.Embed(
+            title=f'{nhl.teams.get(scoring_team)} win in {period_type}!',
+            color=discord.Color(int(nhl.teams_colors.get(winning_team).lstrip('#'), 16)),
+            description=f'-- Final Score --\n{home_team["abbrev"]}: {home_score}\n{away_team["abbrev"]}: {away_score}'
+        )
+        
+        return embed
+        
     embed = discord.Embed(
-        title=f'Event',
+        title=f'{type} Event',
         color=discord.Color.green(),
         description=f'Haven\'t handled this type yet'
     )

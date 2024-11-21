@@ -18,6 +18,8 @@ async def update_games(bot):
             cashout(conn, results, game_id, game_type)
             c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))            
             conn.commit()
+            c.execute('DELETE FROM Update_List WHERE game_id = ?', (game_id,))            
+            conn.commit()
         else:
             c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
             results = c.fetchall()
@@ -27,7 +29,7 @@ async def update_games(bot):
     c.execute('SELECT * FROM Current_Games')
     games = c.fetchall()
     now = datetime.datetime.now()
-    if not games and now.hour == 12 and now.minute == 0:
+    if not games and now.hour >= 12:
         get_todays_games(conn)
     conn.close()
 
