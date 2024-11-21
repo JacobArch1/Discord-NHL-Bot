@@ -402,13 +402,14 @@ def get_league_schedule() -> discord.Embed:
         away_team = game['awayTeam']['abbrev']
         home_team = game['homeTeam']['abbrev']
         venue = game['venue']['default']
+        est_offset = abs(int(game['easternUTCOffset'].split(":")[0]))
+        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴'
 
         dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
-        updated_datetime_obj = dt - datetime.timedelta(hours=4)
-        est_date = str(updated_datetime_obj.strftime('%m/%d'))
+        updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
         est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
         
-        table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] {venue}')
+        table.append(f'{away_team} @ {home_team} [{est_time} EST] {symbol} {venue}')
     if table == ['```']:
         embed.add_field(
             name=f'No Games Scheduled Today', 

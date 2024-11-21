@@ -3,7 +3,6 @@ import datetime
 
 BASE_URL = 'https://api-web.nhle.com'
 
-#Current Lineup
 teams = {'ANA' : 'Anaheim Ducks',  
          'BOS' : 'Boston Bruins', 
          'BUF' : 'Buffalo Sabres', 
@@ -37,7 +36,6 @@ teams = {'ANA' : 'Anaheim Ducks',
          'WSH' : 'Washington Capitals',
          'UTA' : 'Utah Hockey Club'}
 
-#Team Colors
 teams_colors = {'ANA': '#F47A38', 
                 'ARI': '#8C2633', 
                 'BOS': '#FFB81C', 
