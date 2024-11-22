@@ -371,7 +371,6 @@ class Scheduled(commands.Cog):
             await schedules.fetch_standings()
 
     async def update_games(self):
-        await asyncio.sleep(10)
         while True:
             await schedules.update_games(self.bot)
             await asyncio.sleep(1)

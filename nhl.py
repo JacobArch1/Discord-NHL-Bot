@@ -70,6 +70,38 @@ teams_colors = {'ANA': '#F47A38',
                 'WSH': '#041E42',
                 'UTA': '#71AFE5'}
 
+team_emojis = {'ANA': 1309592481020510208,
+               'BOS': 1309592803143323771,
+               'BUF': 1309592477254025288,
+               'CAR': 1309592474003570708,
+               'CBJ': 1309592466789498993,
+               'CGY': 1309592772117921885,
+               'CHI': 1309592737603125261,
+               'COL': 1309592469410807809,
+               'DAL': 1309592703696240721,
+               'DET': 1309592463861743667,
+               'EDM': 1309592680354807889,
+               'FLA': 1309592460342591528,
+               'LAK': 1309592457159118848,
+               'MIN': 1309592645902794862,
+               'MTL': 1309592454214844466,
+               'NJD': 1309592446551724152,
+               'NSH': 1309592453145165945,
+               'NYI': 1309592445125922948,
+               'NYR': 1309592441434669197,
+               'OTT': 1309592439543042059,
+               'PHI': 1309592438385414184,
+               'PIT': 1309592436565217331,
+               'SJS': 1309592434724044871,
+               'STL': 1309592433054580836,
+               'TBL': 1309592430617559110,
+               'TOR': 1309592428176605315,
+               'UTA': 1309592413748199526,
+               'VAN': 1309592421599936632,
+               'VGK': 1309592420010299493,
+               'WPG': 1309592416054939658,
+               'WSH': 1309592417237860402}
+
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):
     url = BASE_URL + endpoint
@@ -77,7 +109,7 @@ def connect_endpoint(endpoint: str):
     if response.status_code == 200:
         return response.json(), None
     else:
-        log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}\n')
+        log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}')
         return None, response.status_code
 
 def get_data(category: str, params: dict):

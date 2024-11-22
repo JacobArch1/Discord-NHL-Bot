@@ -52,7 +52,7 @@ def bonus(user_id: int, guild_id: str, avatar: str) -> discord.Embed:
     if result is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bonus', 
@@ -94,7 +94,7 @@ def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     if result is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Beg', 
@@ -135,7 +135,7 @@ def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     if balance is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Balance', 
@@ -174,7 +174,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     if game is None:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bet', 
@@ -191,7 +191,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     if current_time > close_time:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bet', 
@@ -211,7 +211,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     if user:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bet', 
@@ -252,7 +252,7 @@ def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     if not bets:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bets', 
@@ -291,7 +291,7 @@ def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> disc
     if not bets:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Bet History', 
@@ -353,7 +353,7 @@ def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Em
     elif current_time > close_time:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Remove Bet', 
@@ -420,7 +420,7 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str
     if wager not in [1, 5, 10, 100]:
         embed = discord.Embed(
             title='Wager must be $1, $5, $10, $100',
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Slots', 
@@ -502,7 +502,7 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avatar: str
     if side not in ['h', 't', 'heads', 'tails']:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Coin Flip', 
@@ -581,7 +581,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     if param_error:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Roulette', 
@@ -669,7 +669,7 @@ def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: 
     if amount > 100:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Jackpot', 
@@ -761,7 +761,7 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
     if balance is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.add_field(
             name='', 
@@ -771,7 +771,7 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
     elif balance[0] < wager:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.add_field(
             name='', 
@@ -782,7 +782,7 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
     elif wager < min_wager:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.add_field(
             name='', 

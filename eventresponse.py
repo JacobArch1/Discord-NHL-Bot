@@ -78,7 +78,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         embed = discord.Embed(
             title=f'{nhl.teams.get(scoring_team, 'Unknown Team')} Goal!',
             color=discord.Color(int(nhl.teams_colors.get(scoring_team).lstrip('#'), 16)),
-            description=f'Scored by {first_name} {last_name} @ {time_of_goal}'
+            description=f'Scored by **{first_name} {last_name}** @ {time_of_goal}'
         )
         
         return embed
@@ -121,12 +121,12 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         
         time_of_penalty = event['timeInPeriod']
         penalty_type = event_details.get('descKey','???').replace('-', ' ')
-        duration = event_details.get('')
+        duration = event_details.get('duration','')
         
         embed = discord.Embed(
             title=f'{nhl.teams.get(offending_team, 'Unknown Team')} Penalty.',
             color=discord.Color(int(nhl.teams_colors.get(offending_team).lstrip('#'), 16)),
-            description=f'{first_name} {last_name} for {penalty_type} @ {time_of_penalty}\nDuration: {duration} minutes.'
+            description=f'{first_name} {last_name} For **{penalty_type.upper()}** @ {time_of_penalty}\nDuration: {duration} Minutes.'
         )
         
         return embed

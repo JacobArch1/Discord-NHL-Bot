@@ -98,7 +98,7 @@ def get_id(conn, guild_id: int, username:str) -> int:
     if user_id is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.yellow()
+            color=discord.Color.lighter_gray()
         )
         embed.add_field(
             name='',

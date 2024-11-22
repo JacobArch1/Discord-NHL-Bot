@@ -344,14 +344,13 @@ def get_playoff_bracket() -> discord.Embed:
         round_number = round_data['roundNumber']
         series_list = round_data['series']
         
-        table = ['```', f'{'Top':<8}{'Score'}{'Btm':>8}\n']
+        table = ['']
 
         for series in series_list:
             top_seed = series['topSeed']
             bottom_seed = series['bottomSeed']
-            table.append(f'{top_seed['abbrev']:<8}{top_seed['wins']} - {bottom_seed['wins']}{bottom_seed['abbrev']:>8}')
+            table.append(f'<:{top_seed['abbrev']}:{nhl.team_emojis.get(top_seed['abbrev'])}> {top_seed['abbrev']} **{top_seed['wins']} - {bottom_seed['wins']}** {bottom_seed['abbrev']} <:{bottom_seed['abbrev']}:{nhl.team_emojis.get(bottom_seed['abbrev'])}>')
         
-        table.append('```')
         table = '\n'.join(table)
         embed.add_field(
             name=f'Round {round_number}', 
@@ -371,7 +370,7 @@ def get_team_schedule(team: str) -> discord.Embed:
         )
         return embed
     
-    table = ['```']
+    table = ['']
 
     for game in schedule['games']:
         venue = game['venue']['default']
@@ -385,9 +384,8 @@ def get_team_schedule(team: str) -> discord.Embed:
         home_team = game['homeTeam']['abbrev']
         away_team = game['awayTeam']['abbrev']
 
-        table.append(f'{away_team} @ {home_team} [{est_date} {est_time.lstrip('0')} EST] {symbol} {venue}')
+        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> [{est_date} {est_time.lstrip('0')} EST] {symbol} {venue}')
     
-    table.append('```')
     table = '\n'.join(table)
     embed.add_field(
         name=f'{team} Week Schedule', 
@@ -399,7 +397,7 @@ def get_team_schedule(team: str) -> discord.Embed:
 def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
     games_today = schedule['gameWeek'][0]['games']
-    table = ['```']
+    table = ['']
     embed = discord.Embed(color=discord.Color(0xFFFFFF))
     for game in games_today:
         away_team = game['awayTeam']['abbrev']
@@ -412,14 +410,13 @@ def get_league_schedule() -> discord.Embed:
         updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
         est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
         
-        table.append(f'{away_team} @ {home_team} [{est_time.lstrip('0')} EST] {symbol} {venue}')
-    if table == ['```']:
+        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> [{est_time.lstrip('0')} EST] {symbol} {venue}')
+    if table == ['']:
         embed.add_field(
             name=f'No Games Scheduled Today', 
             value=''
         )
         return embed
-    table.append('```')
     table = '\n'.join(table)
     embed.add_field(
         name=f'Today\'s Games', 
@@ -445,7 +442,7 @@ def get_live_score(team: str) -> discord.Embed:
             break
 
     if scoreboard is None:
-        embed = discord.Embed(title='Notice', color=discord.Color.yellow())
+        embed = discord.Embed(title='Notice', color=discord.Color.lighter_gray())
         embed.add_field(
             name='', 
             value='This team is not playing today.'
@@ -459,9 +456,9 @@ def get_live_score(team: str) -> discord.Embed:
     away_score = scoreboard['awayTeam'].get('score', 0)
     home_score = scoreboard['homeTeam'].get('score', 0)
 
-    if game_state == 'LIVE':
+    if game_state in ['LIVE', 'CRIT']:
         color = discord.Color.green()
-    elif game_state == 'FINAL' or game_state == 'OFF':
+    elif game_state in ['FINAL', 'OFF']:
         winner = away_team if away_score > home_score else home_team
         color = int(nhl.teams_colors.get(winner, '#FFFFFF').lstrip('#'), 16)
     else:
@@ -470,7 +467,7 @@ def get_live_score(team: str) -> discord.Embed:
     embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
     embed.add_field(
         name='', 
-        value=f'```{home_team}{home_score:>3}   -   {away_score:<3}{away_team:>3}```'
+        value=f'<:{home_team}:{nhl.team_emojis.get(home_team)}> {home_team} **{home_score} - {away_score}** {away_team} <:{away_team}:{nhl.team_emojis.get(away_team)}>'
     )
     embed.set_footer(text=f'{scoreboard['gameState']}')
     return embed
@@ -490,20 +487,19 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     
     if game_id == 0:
         embed = discord.Embed(color=discord.Color.lighter_gray())
-        embed.add_field(name='', value='Game could not be found.', inline=False)
+        embed.add_field(name='', value='Game could not be found or is still ongoing.', inline=False)
         return embed
     
     game_story = nhl.get_game_story(game_id)
-    home_team_name = (f'{game_story['homeTeam']['placeName']['default']} {game_story['homeTeam']['name']['default']}')
-    away_team_name = (f'{game_story['awayTeam']['placeName']['default']} {game_story['awayTeam']['name']['default']}')
+    home_team = game_story['homeTeam']['abbrev']
+    away_team = game_story['awayTeam']['abbrev']
     venue = (f'{game_story['venue']['default']}, {game_story['venueLocation']['default']}')
     game_date = game_story['gameDate']
-    title = (f'{away_team_name} @ {home_team_name} ({game_date})\n{venue}')
+    title = (f'{nhl.teams.get(away_team)} @ {nhl.teams.get(home_team)} ({game_date})\n{venue}')
 
     home_score = game_story['homeTeam']['score']
     away_score = game_story['awayTeam']['score']
-    winner = (f'{home_team_name} Victory') if home_score > away_score else (f'{away_team_name} Victory')
-    description = (f'Score: {home_score}-{away_score} {winner}')
+    description = (f'Score: <:{home_team}:{nhl.team_emojis.get(home_team)}> **{home_score} - {away_score} ** <:{away_team}:{nhl.team_emojis.get(away_team)}>')
 
     embed = discord.Embed(
         title=title, 
@@ -547,7 +543,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
                 strength = ''
             embed.add_field(
                 name='', 
-                value=f'[**{scoring_team}** {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})', 
+                value=f'<:{scoring_team}:{nhl.team_emojis.get(scoring_team)}> [**{scoring_team}** {strength} Goal Scored By: **{goal_scorer}** @ {tog}, Asst: {assister}]({video})', 
                 inline=False
             )
 
@@ -556,7 +552,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     team_stats = game_story['summary']['teamGameStats']
     table = [
         '```',
-        f'{'STAT':<16}{f'{home_team_abbr}':>30}{f'{away_team_abbr}':>5}\n',
+        f'{'STAT':<16}{f'{home_team_abbr}':>8}{f'{away_team_abbr}':>5}\n',
     ]
     desired_stats = {'sog': 'SOG', 
                      'powerPlay': 'POWER PLAY GOALS', 
@@ -567,7 +563,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
                      'takeaways': 'TAKEAWAYS'}
     for stat in team_stats:
         if stat['category'] in desired_stats:
-            table.append(f'{desired_stats[stat['category']]:<16}{stat['homeValue']:>30}{stat['awayValue']:>5}')
+            table.append(f'{desired_stats[stat['category']]:<16}{stat['homeValue']:>8}{stat['awayValue']:>5}')
     table.append('```')
     table = '\n'.join(table)
     embed.add_field(
@@ -585,7 +581,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if number == 2 else
             '3rd' if number == 3 else
             f'{number}th')
-        table.append(f'{number} Star: {star['name']} ({star['teamAbbrev']}) Points: {star.get('points', 'X')}')
+        table.append(f'{number} Star: {star['name']} <:{star['teamAbbrev']}:{nhl.team_emojis.get(star['teamAbbrev'])}> Points: {star.get('points', 'X')}')
     table.append('')
     table.reverse()
     table = '\n'.join(table)
@@ -616,14 +612,14 @@ def startgame(team: str, channel_id: int, guild_id: int):
     if game_id == 0:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow(), 
+            color=discord.Color.lighter_gray(), 
             description='This team is not playing today.'
         )
         return embed
     if game_state in ['OFF','FINAL']:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow(), 
+            color=discord.Color.lighter_gray(), 
             description='This game has ended.'
         )
         return embed
@@ -634,7 +630,7 @@ def startgame(team: str, channel_id: int, guild_id: int):
     if result is not None:
         embed = discord.Embed(
             title='Notice', 
-            color=discord.Color.yellow(), 
+            color=discord.Color.lighter_gray(), 
             description='This channel is already recieving updates for this game.'
         )
         return embed
