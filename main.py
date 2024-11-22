@@ -360,6 +360,7 @@ class Scheduled(commands.Cog):
         self.bot.loop.create_task(self.update_tables())
 
     async def update_tables(self):
+        await asyncio.sleep(10)
         while True:
             now = datetime.datetime.now()
             then = now.replace(year=(now.year+1), month=8, day=30, hour=11, minute=59, second=59, microsecond=59)
@@ -370,9 +371,10 @@ class Scheduled(commands.Cog):
             await schedules.fetch_standings()
 
     async def update_games(self):
+        await asyncio.sleep(10)
         while True:
             await schedules.update_games(self.bot)
-            await asyncio.sleep(1 * 5)
+            await asyncio.sleep(1)
 
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')

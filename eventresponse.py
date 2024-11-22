@@ -10,7 +10,7 @@ async def send_events(game_id: int, update_list: list, bot):
     away_team_id = results['awayTeam']['id']
     away_team_abbrev = results['awayTeam']['abbrev']
     away_score = results['awayTeam']['score']
-    away_team = [away_team_id, away_team_abbrev]
+    away_team = {'id' : away_team_id, 'abbrev': away_team_abbrev}
     
     home_team_id = results['homeTeam']['id']
     home_team_abbrev = results['homeTeam']['abbrev']
@@ -27,15 +27,19 @@ async def send_events(game_id: int, update_list: list, bot):
     event_id = event['eventId']
     event_type = event['typeDescKey']
     
+    if event_type in 'faceoff':
+        event = events[-2]
+    
     desired_events = {'period-start', 'period-end', 'goal', 'penalty', 'game-end'}
     
     if event_type not in desired_events:
         return
     
     embed = craft_embed(event, event_type, away_team, home_team, away_score, home_score)
+    conn = sqlite3.connect('./databases/main.db')
     
     for channel_id in update_list:
-        conn = sqlite3.connect('./databases/main.db')
+        
         c = conn.cursor()
         c.execute('SELECT last_event_id FROM Update_List WHERE channel_id = ? AND game_id = ?', (channel_id, game_id,))
         last_event_id = c.fetchone()
@@ -49,7 +53,7 @@ async def send_events(game_id: int, update_list: list, bot):
     conn.close()
 
 def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int) -> discord.Embed:
-    event_details = event['details']
+    event_details = event.get('details', '')
     if type in 'goal':
         scorer_id = event_details['scoringPlayerId']
         conn = sqlite3.connect('./databases/main.db')
@@ -72,7 +76,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         time_of_goal = event['timeInPeriod']
         
         embed = discord.Embed(
-            title=f'{nhl.teams.get(scoring_team)} Goal!',
+            title=f'{nhl.teams.get(scoring_team, 'Unknown Team')} Goal!',
             color=discord.Color(int(nhl.teams_colors.get(scoring_team).lstrip('#'), 16)),
             description=f'Scored by {first_name} {last_name} @ {time_of_goal}'
         )
@@ -92,7 +96,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         embed = discord.Embed(
             title=f'{period_num} {title}',
             color=discord.Color(int('#000000'.lstrip('#'), 16)),
-            description=f'-- Score --\n{home_team["abbrev"]}: {home_score}\n{away_team["abbrev"]}: {away_score}'
+            description=f'-- Score --\n{home_team['abbrev']}: {home_score}\n{away_team['abbrev']}: {away_score}'
         )
         
         return embed
@@ -120,7 +124,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         duration = event_details.get('')
         
         embed = discord.Embed(
-            title=f'{nhl.teams.get(scoring_team)} Penalty.',
+            title=f'{nhl.teams.get(offending_team, 'Unknown Team')} Penalty.',
             color=discord.Color(int(nhl.teams_colors.get(offending_team).lstrip('#'), 16)),
             description=f'{first_name} {last_name} for {penalty_type} @ {time_of_penalty}\nDuration: {duration} minutes.'
         )
@@ -139,7 +143,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
             f'???')
         
         embed = discord.Embed(
-            title=f'{nhl.teams.get(scoring_team)} win in {period_type}!',
+            title=f'{nhl.teams.get(winning_team)} win in {period_type}!',
             color=discord.Color(int(nhl.teams_colors.get(winning_team).lstrip('#'), 16)),
             description=f'-- Final Score --\n{home_team["abbrev"]}: {home_score}\n{away_team["abbrev"]}: {away_score}'
         )

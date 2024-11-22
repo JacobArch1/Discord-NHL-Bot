@@ -21,7 +21,7 @@ def get_info():
     )
     embed.add_field(
         name='Slots Payouts', 
-        value=f'\n🍒 - 1.2x\n🍋 - 1.5x\n🍊- 2x\n🍎 - 3x\n💎 - 10x\n💰 - 50x\n\nClose Wins\n\tw/ 2x 💎 - 2x \n\tw/ 2x 💰 - 10x\n\t w/ Other - 0.05x'
+        value=f'\n🍒 - 2x\n🍋 - 4x\n🍊- 8x\n🍎 - 10x\n💎 - $1,000\n💰 - $10,000\n\nClose Wins\n\tw/ 2x 💎 - $100 \n\tw/ 2x 💰 - $100\n\t w/ Other - 0.05x'
     )
     embed.add_field(
         name='Roulette Payouts',
@@ -376,13 +376,16 @@ def get_team_schedule(team: str) -> discord.Embed:
     for game in schedule['games']:
         venue = game['venue']['default']
         dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
-        updated_datetime_obj = dt - datetime.timedelta(hours=4)
-        est_date = str(updated_datetime_obj.strftime('%m/%d'))
+        est_offset = abs(int(game['easternUTCOffset'].split(":")[0]))
+        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴'
+        updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
         est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
+        est_date = str(updated_datetime_obj.strftime('%m/%d'))
+
         home_team = game['homeTeam']['abbrev']
         away_team = game['awayTeam']['abbrev']
 
-        table.append(f'{away_team} @ {home_team} [{est_date} {est_time} EST] Arena: {venue}')
+        table.append(f'{away_team} @ {home_team} [{est_date} {est_time.lstrip('0')} EST] {symbol} {venue}')
     
     table.append('```')
     table = '\n'.join(table)
@@ -409,7 +412,7 @@ def get_league_schedule() -> discord.Embed:
         updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
         est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
         
-        table.append(f'{away_team} @ {home_team} [{est_time} EST] {symbol} {venue}')
+        table.append(f'{away_team} @ {home_team} [{est_time.lstrip('0')} EST] {symbol} {venue}')
     if table == ['```']:
         embed.add_field(
             name=f'No Games Scheduled Today', 

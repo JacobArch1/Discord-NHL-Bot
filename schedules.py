@@ -81,9 +81,10 @@ def get_todays_games(conn):
         away_team = game['awayTeam']['abbrev']
         home_team = game['homeTeam']['abbrev']
         game_state = game['gameState']
+        est_offset = abs(int(game['easternUTCOffset'].split(":")[0]))
 
         dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
-        updated_datetime_obj = dt - datetime.timedelta(hours=4)
+        updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
 
         est_date = str(updated_datetime_obj.date())
         est_time = str(updated_datetime_obj.time())
