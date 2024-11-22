@@ -12,7 +12,7 @@ def register(user_id: int, user_name: str, guild_id: int, avatar: str) -> discor
     if user:
         embed = discord.Embed(
             title = 'Error', 
-            color = discord.Color.red()
+            color = discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Register', 
@@ -173,7 +173,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     game = c.fetchone()
     if game is None:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
@@ -190,7 +190,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
     if current_time > close_time:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
@@ -251,7 +251,7 @@ def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     bets = c.fetchall()
     if not bets:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
@@ -290,7 +290,7 @@ def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> disc
     bets = c.fetchall()
     if not bets:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
@@ -339,7 +339,7 @@ def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Em
     if bet is None:
         embed = discord.Embed(
             title='Error', 
-            color=discord.Color.red()
+            color=discord.Color.lighter_gray()
         )
         embed.set_author(
             name='Remove Bet', 
@@ -352,7 +352,7 @@ def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Em
         )
     elif current_time > close_time:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
@@ -653,7 +653,7 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     )
     embed.add_field(
         name='',
-        value=f'Ball Landed On: {symbol}**[{ball}]** \n\n**Wager:** 💸\n{wager_title}\n\n**----{title}----**\n\n**Payout:** ${payout}💵',
+        value=f'Ball Landed On: {symbol}**[{ball}]** \n\n**Wager:** 💸\n{wager_title}\n\n**----{title}----**\n\n**Payout:** ${payout} 💵',
         inline=False
     )
     embed.set_footer(text=f'{generate_phrase(wager, payout)}')

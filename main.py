@@ -266,7 +266,7 @@ class Economy(commands.Cog):
                 unit = 'minutes'
             else:
                 unit = 'seconds'
-            embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} {unit}', color=discord.Color.dark_gray())
+            embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} {unit}', color=discord.Color(0xFFFFFF))
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return True
         if command == 'bonus':

@@ -330,7 +330,7 @@ def get_playoff_bracket() -> discord.Embed:
     c.close()
     brackets = nhl.get_playoff_carousel(season[2])
     if 'rounds' not in brackets:
-        embed = discord.Embed(color=discord.Color.red())
+        embed = discord.Embed(color=discord.Color.lighter_gray())
         embed.add_field(
             name='Error', 
             value='No playoff information available', 
@@ -442,7 +442,7 @@ def get_live_score(team: str) -> discord.Embed:
             break
 
     if scoreboard is None:
-        embed = discord.Embed(title='Notice', color=discord.Color.lighter_gray())
+        embed = discord.Embed(title='Error', color=discord.Color.lighter_gray())
         embed.add_field(
             name='', 
             value='This team is not playing today.'
@@ -462,7 +462,7 @@ def get_live_score(team: str) -> discord.Embed:
         winner = away_team if away_score > home_score else home_team
         color = int(nhl.teams_colors.get(winner, '#FFFFFF').lstrip('#'), 16)
     else:
-        color = discord.Color.dark_gray()
+        color = discord.Color(0xFFFFFF)
     
     embed = discord.Embed(title=f'P{period:<3}{time_remaining:>36}', color=color)
     embed.add_field(
@@ -611,14 +611,14 @@ def startgame(team: str, channel_id: int, guild_id: int):
             break
     if game_id == 0:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray(), 
             description='This team is not playing today.'
         )
         return embed
     if game_state in ['OFF','FINAL']:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray(), 
             description='This game has ended.'
         )
@@ -629,7 +629,7 @@ def startgame(team: str, channel_id: int, guild_id: int):
     
     if result is not None:
         embed = discord.Embed(
-            title='Notice', 
+            title='Error', 
             color=discord.Color.lighter_gray(), 
             description='This channel is already recieving updates for this game.'
         )
