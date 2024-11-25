@@ -330,7 +330,16 @@ class Moderator(commands.Cog):
             await interaction.response.send_message(embed=response, ephemeral=True)
         except Exception as e:
             await interaction.response.send_message(embed=await return_error('RESETECONOMY', [interaction.guild.id], e), ephemeral=True)
-    
+            
+    @app_commands.command(name='addroles', description='Create team roles for this server')
+    @app_commands.describe()
+    async def addrolls_command(self, interaction: discord.Interaction):
+        try:
+            response = modresponses.addrolls(interaction)
+            await interaction.response.send_message(embed=response, ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(embed=await return_error('ADDROLLS', [interaction.guild.id], e), ephemeral=True)
+            
     @startgame_command.error
     @wipeuser_command.error
     @addmoney_command.error
@@ -360,20 +369,17 @@ class Scheduled(commands.Cog):
         self.bot.loop.create_task(self.update_tables())
 
     async def update_tables(self):
-        await asyncio.sleep(10)
         while True:
             now = datetime.datetime.now()
-            then = now.replace(year=(now.year+1), month=8, day=30, hour=11, minute=59, second=59, microsecond=59)
-            wait_time = (then - now).total_seconds()
-            await asyncio.sleep(wait_time)
             season = int(str(now.year) + str(now.year+1))
             await schedules.fetch_players(season)
             await schedules.fetch_standings()
+            await asyncio.sleep(86400)
 
     async def update_games(self):
         while True:
             await schedules.update_games(self.bot)
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')

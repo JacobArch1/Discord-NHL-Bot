@@ -89,7 +89,6 @@ def reseteconomy(guild_id: int) -> discord.Embed:
     )
     return embed
     
-
 def get_id(conn, guild_id: int, username:str) -> int:
     c = conn.cursor()
     c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, username,))

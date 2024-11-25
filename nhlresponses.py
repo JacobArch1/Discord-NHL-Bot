@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import discord
 import sqlite3
 from collections import defaultdict
@@ -374,17 +374,14 @@ def get_team_schedule(team: str) -> discord.Embed:
 
     for game in schedule['games']:
         venue = game['venue']['default']
-        dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
         est_offset = abs(int(game['easternUTCOffset'].split(":")[0]))
-        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴'
-        updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
-        est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
-        est_date = str(updated_datetime_obj.strftime('%m/%d'))
+        time = timestamp(game['startTimeUTC'], est_offset, 'f')
+        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴' if game['gameState'] in ['OFF', 'FINAL'] else '🔵'
 
         home_team = game['homeTeam']['abbrev']
         away_team = game['awayTeam']['abbrev']
 
-        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> [{est_date} {est_time.lstrip('0')} EST] {symbol} {venue}')
+        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> {time} {symbol} {venue}')
     
     table = '\n'.join(table)
     embed.add_field(
@@ -397,38 +394,40 @@ def get_team_schedule(team: str) -> discord.Embed:
 def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
     games_today = schedule['gameWeek'][0]['games']
-    table = ['']
-    embed = discord.Embed(color=discord.Color(0xFFFFFF))
+    
+    embed = discord.Embed(
+        title='Today\'s Games',
+        color=discord.Color(0xFFFFFF)
+    )
+    
+    empty_list = True
+    
     for game in games_today:
         away_team = game['awayTeam']['abbrev']
         home_team = game['homeTeam']['abbrev']
-        venue = game['venue']['default']
         est_offset = abs(int(game['easternUTCOffset'].split(":")[0]))
-        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴'
+        time = timestamp(game['startTimeUTC'], est_offset, 't')
+        symbol = '🟢' if game['gameState'] in ['LIVE', 'CRIT'] else '🔴' if game['gameState'] in ['OFF', 'FINAL'] else '🔵'
+        venue = game['venue']['default']
 
-        dt = datetime.datetime.strptime(game['startTimeUTC'], '%Y-%m-%dT%H:%M:%SZ')
-        updated_datetime_obj = dt - datetime.timedelta(hours=est_offset)
-        est_time = str(updated_datetime_obj.strftime('%I:%M %p'))
-        
-        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> [{est_time.lstrip('0')} EST] {symbol} {venue}')
-    if table == ['']:
+        embed.add_field(
+            name='',
+            value=f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> {time} {symbol} {venue}',
+            inline=False
+        )
+        empty_list = False
+    if empty_list:
         embed.add_field(
             name=f'No Games Scheduled Today', 
             value=''
         )
         return embed
-    table = '\n'.join(table)
-    embed.add_field(
-        name=f'Today\'s Games', 
-        value=table, 
-        inline=False
-    )
     return embed
 
 def get_live_score(team: str) -> discord.Embed:
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
-    now = datetime.datetime.now()
+    now = datetime.now()
     today = now.strftime('%Y-%m-%d')
     scoreboard = None
     
@@ -436,7 +435,7 @@ def get_live_score(team: str) -> discord.Embed:
         date = game['date']
         game_state = game['games'][0]['gameState']
 
-        if game_state == 'LIVE' or date == today:
+        if game_state in ['LIVE', 'CRIT', 'FINAL'] or date == today:
             game_id = game['games'][0]['id']
             scoreboard = nhl.get_boxscore(game_id)
             break
@@ -595,7 +594,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
 def startgame(team: str, channel_id: int, guild_id: int):
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
-    now = datetime.datetime.now()
+    now = datetime.now()
     today = now.strftime('%Y-%m-%d')
     game_id = 0
     
@@ -646,3 +645,9 @@ def startgame(team: str, channel_id: int, guild_id: int):
     )
     
     return embed
+
+def timestamp(time: str, offset: int, type: chr) -> str:
+    dt = datetime.strptime(time, '%Y-%m-%dT%H:%M:%SZ')
+    est_time = dt - timedelta(hours=offset)
+    
+    return (f'<t:{int(est_time.timestamp())}:{type}>')

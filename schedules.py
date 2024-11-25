@@ -14,13 +14,14 @@ async def update_games(bot):
         
         state = results['gameState']
         game_type = results['gameType']
-        if state == 'FINAL' or state == 'OFF':
-            cashout(conn, results, game_id, game_type)
+        if state == 'OFF':
             c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))            
             conn.commit()
             c.execute('DELETE FROM Update_List WHERE game_id = ?', (game_id,))            
             conn.commit()
         else:
+            if state == 'FINAL':
+                cashout(conn, results, game_id, game_type)
             c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
             results = c.fetchall()
             channel_ids = [row[4] for row in results]
@@ -118,7 +119,7 @@ async def fetch_players(season: int):
             if c.fetchone():
                 continue
             else:
-                c.execute('INSERT INTO Players (id, firstName, lastName) VALUES (?, ?, ?)', (player['id'], player['firstName'], player['lastName']))
+                c.execute('INSERT INTO Players (id, first_name, last_name) VALUES (?, ?, ?)', (player['id'], player['firstName'], player['lastName']))
                 conn.commit()
     conn.close()
     nhl.log_data(f'Recent Players Fetched')
@@ -145,7 +146,7 @@ async def fetch_standings():
         season_id = season.get('id', 0)
         start_date = season.get('standingsStart', '')
         end_date = season.get('standingsEnd', '')
-        c.execute('INSERT INTO Standings (id, startDate, endDate) VALUES (?, ?, ?)', (season_id, start_date, end_date))
+        c.execute('INSERT INTO Standings (id, start_date, end_date) VALUES (?, ?, ?)', (season_id, start_date, end_date))
         conn.commit()
     conn.close()
     nhl.log_data(f'New Standings Fetched')

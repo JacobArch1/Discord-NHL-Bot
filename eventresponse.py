@@ -17,25 +17,27 @@ async def send_events(game_id: int, update_list: list, bot):
     home_score = results['homeTeam']['score']
     home_team = {'id': home_team_id, 'abbrev': home_team_abbrev}
     
+    desired_events = {'period-start', 'period-end', 'goal', 'penalty', 'game-end'}
+    
     events = results['plays']
     
     if events:
-        event = events[-1]
+        i = 1
+        event = events[-i]
+        event_type = event['typeDescKey']
+        while event_type not in desired_events:
+            i += 1
+            event = events[-i]
+            event_type = event['typeDescKey']
     else:
         return
     
     event_id = event['eventId']
-    event_type = event['typeDescKey']
-    
-    if event_type in 'faceoff':
-        event = events[-2]
-    
-    desired_events = {'period-start', 'period-end', 'goal', 'penalty', 'game-end'}
-    
-    if event_type not in desired_events:
-        return
     
     embed = craft_embed(event, event_type, away_team, home_team, away_score, home_score)
+    if isinstance(embed, bool):
+        return 
+    
     conn = sqlite3.connect('./databases/main.db')
     
     for channel_id in update_list:
@@ -61,7 +63,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         c.execute('SELECT * FROM Players WHERE id = ?', (scorer_id,))
         result = c.fetchone()
         first_name, last_name = 'Unknown', 'Player'
-        if result[0] is not None:
+        if result is not None:
             first_name, last_name = result[1], result[2]
         conn.close()
         
@@ -76,7 +78,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         time_of_goal = event['timeInPeriod']
         
         embed = discord.Embed(
-            title=f'{nhl.teams.get(scoring_team, 'Unknown Team')} Goal!',
+            title=f'<:{scoring_team}:{nhl.team_emojis.get(scoring_team)}> {nhl.teams.get(scoring_team, 'Unknown Team')} Goal!',
             color=discord.Color(int(nhl.teams_colors.get(scoring_team).lstrip('#'), 16)),
             description=f'Scored by **{first_name} {last_name}** @ {time_of_goal}'
         )
@@ -96,18 +98,20 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         embed = discord.Embed(
             title=f'{period_num} {title}',
             color=discord.Color(int('#000000'.lstrip('#'), 16)),
-            description=f'-- Score --\n{home_team['abbrev']}: {home_score}\n{away_team['abbrev']}: {away_score}'
+            description=f'-- Score --\n<:{home_team['abbrev']}:{nhl.team_emojis.get(home_team['abbrev'])}> {home_team['abbrev']} **{home_score} - {away_score}** {away_team['abbrev']} <:{away_team['abbrev']}:{nhl.team_emojis.get(away_team['abbrev'])}>'
         )
         
         return embed
     elif type in ['penalty']:
-        offender_id = event_details['committedByPlayerId']
+        offender_id = event_details.get('committedByPlayerId', '0')
+        if offender_id == 0:
+            return False
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
         c.execute('SELECT * FROM Players WHERE id = ?', (offender_id,))
         result = c.fetchone()
         first_name, last_name = 'Unknown', 'Player'
-        if result[0] is not None:
+        if result is not None:
             first_name, last_name = result[1], result[2]
         conn.close()
         
@@ -121,6 +125,8 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         
         time_of_penalty = event['timeInPeriod']
         penalty_type = event_details.get('descKey','???').replace('-', ' ')
+        if penalty_type in ['minor', 'major']:
+            return False
         duration = event_details.get('duration','')
         
         embed = discord.Embed(
@@ -145,7 +151,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         embed = discord.Embed(
             title=f'{nhl.teams.get(winning_team)} win in {period_type}!',
             color=discord.Color(int(nhl.teams_colors.get(winning_team).lstrip('#'), 16)),
-            description=f'-- Final Score --\n{home_team["abbrev"]}: {home_score}\n{away_team["abbrev"]}: {away_score}'
+            description=f'-- Final Score --\n<:{home_team['abbrev']}:{nhl.team_emojis.get(home_team['abbrev'])}> {home_team['abbrev']} **{home_score} - {away_score}** {away_team['abbrev']} <:{away_team['abbrev']}:{nhl.team_emojis.get(away_team['abbrev'])}>'
         )
         
         return embed
