@@ -88,6 +88,19 @@ def reseteconomy(guild_id: int) -> discord.Embed:
         inline=False
     )
     return embed
+
+def add_roles(guild_id: int) -> discord.Embed:
+    embed = discord.Embed(
+        title='Sorry.', 
+        color=discord.Color.green()
+    )
+    embed.add_field(
+        name='',
+        value=f'Command Not Implemented Yet.',
+        inline=False
+    )
+
+    return embed
     
 def get_id(conn, guild_id: int, username:str) -> int:
     c = conn.cursor()
@@ -106,3 +119,4 @@ def get_id(conn, guild_id: int, username:str) -> int:
         )
         return embed
     return user_id
+

@@ -261,7 +261,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     else:
         pre_title = season[:4] + '-' + season[4:]
     embed = discord.Embed(
-        title = pre_title + ' Roster For ' + team,
+        title = f'<:{team}:{nhl.team_emojis.get(team)}> {pre_title} Roster For {team}',
         color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16))    
     )
 
@@ -591,7 +591,7 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     )
     return embed
 
-def startgame(team: str, channel_id: int, guild_id: int):
+def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
     now = datetime.now()

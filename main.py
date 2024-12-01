@@ -333,13 +333,14 @@ class Moderator(commands.Cog):
             
     @app_commands.command(name='addroles', description='Create team roles for this server')
     @app_commands.describe()
-    async def addrolls_command(self, interaction: discord.Interaction):
+    async def addroles_command(self, interaction: discord.Interaction):
         try:
-            response = modresponses.addrolls(interaction)
+            response = modresponses.addrolls(interaction.guild.id)
             await interaction.response.send_message(embed=response, ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('ADDROLLS', [interaction.guild.id], e), ephemeral=True)
-            
+            await interaction.response.send_message(embed=await return_error('ADDROLES', [interaction.guild.id], e), ephemeral=True)
+    
+    @addroles_command.error
     @startgame_command.error
     @wipeuser_command.error
     @addmoney_command.error

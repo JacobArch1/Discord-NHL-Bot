@@ -429,7 +429,7 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str
         return embed
 
     symbols = ['🍒', '🍋', '🍊', '🍎', '💎', '💰']
-    weights = [35, 25, 15, 10, 5, 1]
+    weights = [38, 28, 20, 10, 3, 1]
 
     spin = random.choices(symbols, weights=weights, k=3)
 
