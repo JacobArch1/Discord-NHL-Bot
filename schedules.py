@@ -2,6 +2,7 @@ import nhl
 import datetime
 import sqlite3
 import eventresponse
+import os
 
 async def update_games(bot):
     conn = sqlite3.connect('./databases/main.db')
@@ -15,13 +16,14 @@ async def update_games(bot):
         state = results['gameState']
         game_type = results['gameType']
         if state == 'OFF':
-            c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))            
+            c.execute('DELETE FROM Current_Games WHERE game_id = ?', (game_id,))
             conn.commit()
             c.execute('DELETE FROM Update_List WHERE game_id = ?', (game_id,))            
             conn.commit()
+            await remove_maps(game_id)   
         else:
             if state == 'FINAL':
-                cashout(conn, results, game_id, game_type)
+                await cashout(conn, results, game_id, game_type)
             c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
             results = c.fetchall()
             channel_ids = [row[4] for row in results]
@@ -31,10 +33,10 @@ async def update_games(bot):
     games = c.fetchall()
     now = datetime.datetime.now()
     if not games and now.hour >= 12:
-        get_todays_games(conn)
+        await get_todays_games(conn)
     conn.close()
 
-def cashout(conn, results: dict, game_id: int, game_type: int):
+async def cashout(conn, results: dict, game_id: int, game_type: int):
     c = conn.cursor()
     c.execute('SELECT * FROM Betting_Pool WHERE game_id == ?', (game_id,))
     bets = c.fetchall()
@@ -69,7 +71,14 @@ def cashout(conn, results: dict, game_id: int, game_type: int):
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
 
-def get_todays_games(conn):
+async def remove_maps(game_id):
+    map_path = './images/Maps'
+    for item in os.listdir(map_path):
+        if item == f"{game_id}.png":
+            item_path = os.path.join(map_path, item)
+            os.unlink(item_path)
+
+async def get_todays_games(conn):
     c = conn.cursor()
     c.execute('DELETE FROM Current_Games')
     conn.commit()
@@ -109,9 +118,9 @@ async def fetch_players(season: int):
         results = nhl.get_team_roster_by_season(team, season)
         if 'error' in results:
             continue
-        forwards_info = extract_player_info(results.get('forwards', []))
-        defensemen_info = extract_player_info(results.get('defensemen', []))
-        goalies_info = extract_player_info(results.get('goalies', []))
+        forwards_info = await extract_player_info(results.get('forwards', []))
+        defensemen_info = await extract_player_info(results.get('defensemen', []))
+        goalies_info = await extract_player_info(results.get('goalies', []))
         all_players_info = forwards_info + defensemen_info + goalies_info
         for player in all_players_info:
             c = conn.cursor()
@@ -124,7 +133,7 @@ async def fetch_players(season: int):
     conn.close()
     nhl.log_data(f'Recent Players Fetched')
 
-def extract_player_info(players):
+async def extract_player_info(players):
     extracted_info = []
     for player in players:
         player_info = {

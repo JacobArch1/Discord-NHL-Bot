@@ -1,5 +1,6 @@
 import requests
 import datetime
+import discord
 
 BASE_URL = 'https://api-web.nhle.com'
 
@@ -56,9 +57,9 @@ teams_colors = {'ANA': '#F47A38',
                 'NSH': '#FFB81C', 
                 'NYI': '#00539b', 
                 'NYR': '#0038A8', 
-                'OTT': '#000000', 
+                'OTT': '#111010', 
                 'PHI': '#F74902', 
-                'PIT': '#000000', 
+                'PIT': '#111010', 
                 'SEA': '#001628', 
                 'SJS': '#006D75', 
                 'STL': '#002F87', 
@@ -97,11 +98,55 @@ team_emojis = {'ANA': 1309592481020510208,
                'STL': 1309592433054580836,
                'TBL': 1309592430617559110,
                'TOR': 1309592428176605315,
-               'UTA': 1309592413748199526,
+               'UTA': 1314302424315592786,
                'VAN': 1309592421599936632,
                'VGK': 1309592420010299493,
                'WPG': 1309592416054939658,
                'WSH': 1309592417237860402}
+
+team_logos = {'ANA': '',
+               'BOS': '',
+               'BUF': '',
+               'CAR': '',
+               'CBJ': '',
+               'CGY': '',
+               'CHI': '',
+               'COL': '',
+               'DAL': '',
+               'DET': '',
+               'EDM': '',
+               'FLA': '',
+               'LAK': '',
+               'MIN': '',
+               'MTL': '',
+               'NJD': '',
+               'NSH': '',
+               'NYI': '',
+               'NYR': '',
+               'OTT': '',
+               'PHI': '',
+               'PIT': '',
+               'SEA': '',
+               'SJS': '',
+               'STL': '',
+               'TBL': '',
+               'TOR': '',
+               'UTA': '',
+               'VAN': '',
+               'VGK': '',
+               'WPG': '',
+               'WSH': ''}
+
+def verify_team(team: str):
+    if team.upper() not in teams:
+        embed = discord.Embed(
+            title='Error',
+            description='Could not find team',
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    else:
+        return True
 
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):

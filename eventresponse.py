@@ -3,6 +3,16 @@ from PIL import Image
 import nhl
 import discord
 import sqlite3
+import os
+import asyncio
+from dotenv import load_dotenv
+from typing import Final
+from imgurpython import ImgurClient
+from imgurpython.helpers.error import ImgurClientRateLimitError, ImgurClientError
+
+load_dotenv()
+ID: Final[str] = os.getenv('CLIENT_ID')
+SECRET: Final[str] = os.getenv('CLIENT_SECRET')
 
 async def send_events(game_id: int, update_list: list, bot):
     results = nhl.get_play_by_play(game_id)
@@ -16,6 +26,8 @@ async def send_events(game_id: int, update_list: list, bot):
     home_team_abbrev = results['homeTeam']['abbrev']
     home_score = results['homeTeam']['score']
     home_team = {'id': home_team_id, 'abbrev': home_team_abbrev}
+    
+    game_id = results['id']
     
     desired_events = {'period-start', 'period-end', 'goal', 'penalty', 'game-end'}
     
@@ -33,20 +45,18 @@ async def send_events(game_id: int, update_list: list, bot):
         return
     
     event_id = event['eventId']
-    
-    embed = craft_embed(event, event_type, away_team, home_team, away_score, home_score)
-    if isinstance(embed, bool):
-        return 
-    
+
     conn = sqlite3.connect('./databases/main.db')
     
     for channel_id in update_list:
-        
         c = conn.cursor()
         c.execute('SELECT last_event_id FROM Update_List WHERE channel_id = ? AND game_id = ?', (channel_id, game_id,))
         last_event_id = c.fetchone()
 
         if event_id != last_event_id[0]:
+            embed = await craft_embed(event, event_type, away_team, home_team, away_score, home_score, game_id)
+            if isinstance(embed, bool):
+                return 
             channel = bot.get_channel(channel_id)
             if channel:
                 c.execute('UPDATE Update_List SET last_event_id = ? WHERE channel_id = ? AND game_id = ?', (event_id, channel_id, game_id,))
@@ -54,7 +64,7 @@ async def send_events(game_id: int, update_list: list, bot):
                 await channel.send(embed=embed)
     conn.close()
 
-def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int) -> discord.Embed:
+async def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int, game_id: int) -> discord.Embed:
     event_details = event.get('details', '')
     if type in 'goal':
         scorer_id = event_details['scoringPlayerId']
@@ -66,6 +76,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
         if result is not None:
             first_name, last_name = result[1], result[2]
         conn.close()
+        player = f'{first_name} {last_name}'
         
         team_id = event_details['eventOwnerTeamId']
         
@@ -76,12 +87,16 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
             scoring_team = away_team['abbrev']
         
         time_of_goal = event['timeInPeriod']
+        xcoord = event_details.get('xCoord', 0)
+        ycoord = event_details.get('yCoord', 0)
         
         embed = discord.Embed(
-            title=f'<:{scoring_team}:{nhl.team_emojis.get(scoring_team)}> {nhl.teams.get(scoring_team, 'Unknown Team')} Goal!',
+            title=f'🚨 <:{scoring_team}:{nhl.team_emojis.get(scoring_team)}> {nhl.teams.get(scoring_team, 'Unknown Team')} Goal! 🚨',
             color=discord.Color(int(nhl.teams_colors.get(scoring_team).lstrip('#'), 16)),
-            description=f'Scored by **{first_name} {last_name}** @ {time_of_goal}'
+            description=f'Scored by **{player}** @ {time_of_goal}'
         )
+        path = await create_map(xcoord, ycoord, game_id, player, time_of_goal, nhl.teams_colors.get(scoring_team))
+        embed.set_image(url=path)
         
         return embed
     elif type in ['period-start','period-end']:
@@ -164,8 +179,7 @@ def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_s
     
     return embed
 
-#If you know a way to host this image without a bunch of BS. LMK
-def create_map(x: int, y: int, game_id: int):
+async def create_map(x: int, y: int, game_id: int, player: str, time: str, color: str):
     rink_width = 200
     rink_height = 85
 
@@ -180,8 +194,33 @@ def create_map(x: int, y: int, game_id: int):
 
     plt.figure(figsize=(10, 5))
     plt.imshow(rink_image)
-    plt.scatter(image_x, image_y, color='black', s=50, marker='D')
+    plt.title(label=f'{player} @ {time}')
+    plt.scatter(image_x, image_y, color=color, s=50, marker='D')
     plt.axis('off')
 
-    output_filename = f'./mapimages/{game_id}.png'
+    output_filename = f'./images/Maps/{game_id}.png'
     plt.savefig(output_filename, bbox_inches='tight', dpi=300)
+    plt.close()
+    
+    return await upload_to_imgur(output_filename)
+    
+async def upload_to_imgur(image_path: str):
+    client_id = ID
+    client_secret = SECRET
+    client = ImgurClient(client_id, client_secret)
+    
+    max_retries = 3
+    retry_delay = 20
+
+    for attempt in range(max_retries):
+        try:
+            response = client.upload_from_path(image_path)
+            return response['link']
+        except ImgurClientRateLimitError:
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay)
+            else:
+                print('Cant Upload')
+                return None
+        except ImgurClientError:
+            return None

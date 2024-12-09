@@ -8,7 +8,6 @@ import nhlresponses
 import economyresponses
 import modresponses
 import schedules
-import time
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -20,348 +19,614 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='$', intents=intents)
+
+class InfoView(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=None)
+            
+        @discord.ui.button(label='Button', style=discord.ButtonStyle.primary)
+        async def button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.send_message('Pressed!')
+
+@bot.tree.command(name='info', description='Get command information.')
+async def info_command(interaction: discord.Interaction):
+    try:
+        response = await nhlresponses.get_info()
+        await interaction.response.send_message(content=interaction.user.mention, embed=response, view=InfoView(), ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(embed=await return_error('INFO', [None], e))
 
 class NHL(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.live_channels = {}
+            
+    #--------------PLAYERSTATS--------------
+    #first_name (REQUIRED): Ensure proper spelling and special characters where needed
+    #last_name (REQUIRED): Ensure proper spelling and special characters where needed
 
-    @app_commands.command(name='info', description='Get command information.')
-    async def info_command(self, interaction: discord.Interaction):
+    @commands.command(name='playerstats')
+    async def playerstats_command(self, ctx, first_name: str, last_name: str):
         try:
-            response = nhlresponses.get_info()
-            await interaction.response.send_message(content=interaction.user.mention, embed=response, ephemeral=True)
+            response = await nhlresponses.get_player_stats(first_name, last_name)
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('INFO', [None], e), ephemeral=True)
+            await ctx.send(embed=await return_error('PLAYERSTATS', [None], e))
+            
+    @playerstats_command.error
+    async def playerstats_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='playerstats Usage',
+                description='$playerstats **first_name** **last_name**\nEnsure proper spelling and special characters\n\nExample: ```$playerstats Connor McDavid```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
 
-    @app_commands.command(name='playerstats', description='Get statistics for a player. Records span back to 1917')
-    @app_commands.describe(first_name='Enter first name. Use proper capitalization and special characters where needed')
-    @app_commands.describe(last_name='Enter last name. Use proper capitalization and special characters where needed')
-    async def playerstats_command(self, interaction: discord.Interaction, first_name: str, last_name: str):
-        try:
-            response = nhlresponses.get_player_stats(first_name, last_name)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('PLAYERSTATS', [None], e))
-
-    @app_commands.command(name='standings', description='Get the current standings for each division.')
-    @app_commands.describe(season='Get standings by specific year. Format: YYYY-YYYY')
-    async def standings_command(self, interaction: discord.Interaction, season: Optional[str] = None):
+    #--------------STANDINGS--------------
+    #season (OPTIONAL): Format YYYY-YYYY
+    
+    @commands.command(name='standings')
+    async def standings_command(self, ctx, season: Optional[str] = None):
         try:
             if season:
                 season = season.replace('-', '')
-                response = nhlresponses.get_standings(season)
+                response = await nhlresponses.get_standings(season)
             else:
-                response = nhlresponses.get_standings('')
-            await interaction.response.send_message(embed=response)
+                response = await nhlresponses.get_standings('')
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('STANDINGS', [None], e))
+            await ctx.send(embed=await return_error('STANDINGS', [None], e))
+            
+    #--------------LEADERS--------------
+    #position (REQUIRED): Either SKATER or GOALIE
+    #category (REQUIRED): Category must be spelled properly. /info has list of known categories
 
-    @app_commands.command(name='leaders', description='Get the leaders in a specific category.')
-    @app_commands.describe(position='Skater or goalie.')
-    @app_commands.describe(category='Use /info for list of categories.')
-    async def leaders_command(self, interaction: discord.Interaction, position: str, category: str):
+    @commands.command(name='leaders')
+    async def leaders_command(self, ctx, category: str):
         try:
-            response = nhlresponses.get_leaders(position, category)
-            await interaction.response.send_message(embed=response)
+            response = await nhlresponses.get_leaders(category)
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('LEADERS', [position, category], e))
-     
-    @app_commands.command(name='teamroster', description='Get the roster for a team.')
-    @app_commands.describe(team='Enter the three letter abbreviation.')
-    @app_commands.describe(season='Get team roster by specific year. Format: YYYY-YYYY')
-    async def teamroster_command(self, interaction: discord.Interaction, team: str, season: Optional[str] = 'current'):
+            await ctx.send(embed=await return_error('LEADERS', [category], e))
+    
+    @leaders_command.error
+    async def leaders_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='leaders Usage',
+                description='$leaders **category**\nUse /info for a list of known categories.\n\nExample: ```$leaders goals```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+    
+    #--------------ROSTER--------------
+    #team (REQUIRED): Three letter abbrev for your team
+    #season (OPTIONAL): Format YYYY-YYYY
+    
+    @commands.command(name='roster')
+    async def roster_command(self, ctx, team: str, season: Optional[str] = 'current'):
         try:
-            response = nhlresponses.get_team_roster(team, season.replace('-', ''))
-            await interaction.response.send_message(embed=response)
+            response = await nhlresponses.get_roster(team, season.replace('-', ''))
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('TEAMROSTER', [team, season.replace('-', '')], e))
+            await ctx.send(embed=await return_error('ROSTER', [team, season.replace('-', '')], e))
+    
+    @roster_command.error
+    async def roster_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='roster Usage',
+                description='$roster **team** **season**[OPT]\nUse three letter abbrev for your team and YYYY-YYYY format for season\n\nExample: ```$roster TBL 2018-2019```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
 
-    @app_commands.command(name='playoffbracket', description='Get the current playoff ')
-    async def playoffbracket_command(self, interaction: discord.Interaction):
+    #--------------PLAYOFFINFO--------------
+    
+    @commands.command(name='playoffinfo')
+    async def playoffinfo_command(self, ctx):
         try:
-            response = nhlresponses.get_playoff_bracket()
-            await interaction.response.send_message(embed=response)
+            response = await nhlresponses.get_playoff_bracket()
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('PLAYOFFBRACKET', [None], e))
+            await ctx.send(embed=await return_error('PLAYOFFINFO', [None], e))
 
-    @app_commands.command(name='schedule', description='Get todays games for all teams.')
-    @app_commands.describe(team='Enter the three letter abbreviation. Gets this weeks games for that team.')
-    async def schedule_command(self, interaction: discord.Interaction, team: Optional[str] = None):
+    #--------------PLAYOFFINFO--------------
+    #team (OPTIONAL): Three letter abbrev for your team
+    
+    @commands.command(name='schedule')
+    async def schedule_command(self, ctx, team: Optional[str] = None):
         try:
             if team:
-                response = nhlresponses.get_team_schedule(team)
+                response = await nhlresponses.get_team_schedule(team)
             else:
-                response = nhlresponses.get_league_schedule()
-            await interaction.response.send_message(embed=response)
+                response = await nhlresponses.get_league_schedule()
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('SCHEDULE', [team], e))
+            await ctx.send(embed=await return_error('SCHEDULE', [team], e))
+    
+    @schedule_command.error
+    async def schedule_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='schedule Usage',
+                description='$schedule **team[OPT]**\nLists todays game for the league or weeks game for specified team\n\nExample: ```$schedule CHI```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------SCORE--------------
+    #team (REQUIRED): Three letter abbrev for your team
 
-    @app_commands.command(name='score', description='Get the live score right now.')
-    @app_commands.describe(team='Enter the three letter abbreviation.')
-    async def score_command(self, interaction: discord.Interaction, team: str):
+    @commands.command(name='score')
+    async def score_command(self, ctx, team: str):
         try:
-            response = nhlresponses.get_live_score(team)
-            await interaction.response.send_message(embed=response)
+            response = await nhlresponses.get_live_score(team)
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('SCORE', [team], e))
+            await ctx.send(embed=await return_error('SCORE', [team], e))
+            
+    @score_command.error
+    async def score_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='score Usage',
+                description='$score **team**\nGet live scoreboard for your team\n\nExample: ```$score MIN```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
 
-    @app_commands.command(name='gamestory', description='Get scoring info and team stats for a specific game.')
-    @app_commands.describe(team='Enter the three letter abbreviation.')
-    @app_commands.describe(date='Enter the date for this game YYYY-MM-DD. Records span back about a week.')
-    async def gamestory_command(self, interaction: discord.Interaction, team: str, date: str):
+    #--------------GAMESTORY--------------
+    #team (REQUIRED): Three letter abbrev for your team
+    #date (REQUIRED): Format YYYY-MM-DD
+    
+    @commands.command(name='gamestory')
+    async def gamestory_command(self, ctx, team: str, date: Optional[str]):
         try:
-            response = nhlresponses.get_game_story(team, date)
-            await interaction.response.send_message(embed=response)
+            response = await nhlresponses.get_game_story(team, date)
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('GAMESTORY', [team, date], e))
+            await ctx.send(embed=await return_error('GAMESTORY', [team, date], e))
+    
+    @gamestory_command.error
+    async def gamestory_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='gamestory Usage',
+                description='$gamestory **team** **date**\nUse three letter abbrev for your team and YYYY-MM-DD format for the date\n\nExample: ```$gamestory MTL 2024-12-03```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
 
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns = {}
-
-    @app_commands.command(name='register', description='Sign up for this servers economy.')
-    async def register_command(self, interaction: discord.Interaction):
-        try:
-            response = economyresponses.register(interaction.user.id, interaction.user.name, interaction.guild.id, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response, ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('REGISTER', [interaction.user.id, interaction.user.name, interaction.guild.id], e), ephemeral=True)
-
-    @app_commands.command(name='bonus', description='Get your daily $1,000 bonus.')
-    async def bonus_command(self, interaction: discord.Interaction):
-        try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'bonus'):
-                return
-            response = economyresponses.bonus(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('BONUS', [interaction.user.id, interaction.guild.id], e))
-    
-    @app_commands.command(name='beg', description='Earn between $50 to $100')
-    async def beg_command(self, interaction: discord.Interaction):
-        try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'beg'):
-                return
-            response = economyresponses.beg(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('BEG', [interaction.user.id, interaction.guild.id], e))
-    
-    @app_commands.command(name='balance', description='Check your current balance.')
-    async def balance_command(self, interaction: discord.Interaction):
-        try:
-            response = economyresponses.balance(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('BALANCE', [interaction.user.id , interaction.guild.id], e))
-
-    @app_commands.command(name='placebet', description='Bet on which team will win their game today. Bets won\'t be accepted 10 minutes before puckdrop.')
-    @app_commands.describe(team='Bet on which team will win. Use the three letter abbreviation.')
-    @app_commands.describe(wager='Place your wager. Minimum $10')
-    async def bet_command(self, interaction: discord.Interaction, team: str, wager: float):
-        try:
-            response = economyresponses.placebet(interaction.user.id, interaction.guild.id, team.upper(), wager, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('PLACEBET', [interaction.user.id, interaction.guild.id, team.upper(), wager], e))
-
-    @app_commands.command(name='mybets', description='Check your current bets.')
-    async def mybets_command(self, interaction: discord.Interaction):
-        try:
-            response = economyresponses.mybets(interaction.user.id, interaction.guild.id, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('MYBETS', [interaction.user.id, interaction.guild.id], e))
-
-    @app_commands.command(name='removebet', description='Remove a bet. Use \'mybets\' to get your bet ID.')
-    @app_commands.describe(team='Enter which team you want to remove the bet for.')
-    async def removebet_command(self, interaction: discord.Interaction, team: str):
-        try:
-            response = economyresponses.removebet(interaction.user.id, interaction.guild.id, team, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('REMOVEBET', [interaction.user.id, interaction.guild.id, team], e))
-    
-    @app_commands.command(name='bethistory', description='See the last 10 bets you placed.')
-    async def bethistory_command(self, interaction: discord.Interaction):
-        try:
-            response = economyresponses.bethistory(interaction.user.id, interaction.guild.id, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(content=interaction.user.mention, embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('BETHISTORY', [interaction.user.id, interaction.guild.id], e))
-
-    @app_commands.command(name='leaderboard', description='See which server members have the most money.')
-    async def leaderboard_command(self, interaction: discord.Interaction):
-        try:
-            response = economyresponses.leaderboard(interaction.guild.id)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('LEADERBOARD', [interaction.guild.id], e))
-    
-    @app_commands.command(name='slots', description='Gamble all your money away. :D')
-    @app_commands.describe(wager='Enter your wager, Minimum $10 Bet.')
-    async def slots(self, interaction:discord.Interaction, wager: float):
-        try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'slots'):
-                return
-            response = economyresponses.slots(interaction.user.id, interaction.guild.id, wager, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('SLOTS', [wager, interaction.guild.id], e))
-
-    @app_commands.command(name='coinflip', description='Gamble some of your money away. :)')
-    @app_commands.describe(side='Heads or Tails')
-    async def coinflip(self, interaction:discord.Interaction, side: str):
-        try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'coinflip'):
-                return
-            response = economyresponses.coinflip(interaction.user.id, interaction.guild.id, side, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('COINFLIP', [side, interaction.guild.id], e))
         
-    @app_commands.command(name='roulette', description='Gamble every dime you own. :D')
-    @app_commands.describe(color='Red or Black.')
-    @app_commands.describe(color_wager='1 to 1 Payout.')
-    @app_commands.describe(number='Pick a number 1-36.')
-    @app_commands.describe(number_wager='11 to 1 Payout.')
-    async def roulette(self, interaction:discord.Interaction, color: Optional[str], color_wager: Optional[float], number: Optional[int], number_wager: Optional[float]):
+    #--------------REGISTER--------------
+
+    @commands.command(name='register')
+    async def register_command(self, ctx):
         try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'roulette'):
-                return
-            response = economyresponses.roulette(interaction.user.id, interaction.guild.id, color, color_wager, number, number_wager, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=response)
+            response = await economyresponses.register(ctx.author.id, ctx.author.name, ctx.guild.id, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('ROULETTE', [color, color_wager, number, number_wager, interaction.guild.id], e))
+            await ctx.send(embed=await return_error('REGISTER', [ctx.author.id, ctx.author.name, ctx.guild.id], e))
+
+    #--------------BONUS--------------  
+    #COOLDOWN: 24 Hours
     
-    @app_commands.command(name='jackpot', description='Put money into the jackpot machine for a chance to win it.')
-    @app_commands.describe(amount='Min $1, Max $100')
-    async def jackpot(self, interaction:discord.Interaction, amount: int):
+    @commands.command(name='bonus')
+    @commands.cooldown(1, 86400, commands.BucketType.guild)
+    async def bonus_command(self, ctx):
         try:
-            if await self.check_cooldown(interaction, interaction.user.id, interaction.guild.id, 'jackpot'):
-                return
-            response = economyresponses.jackpot(interaction.guild.id, interaction.user.id, amount, interaction.user.name, interaction.user.display_avatar.url)
-            await interaction.response.send_message(embed=response)
+            response = await economyresponses.bonus(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('JACKPOT', [interaction.guild.id, amount], e))
+            await ctx.send(embed=await return_error('BONUS', [ctx.author.id, ctx.guild.id], e))
+    
+    @bonus_command.error
+    async def bonus_error(self, ctx, error):
+        if isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Bonus was already claimed.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
             
-    @app_commands.command(name='checkjackpot', description='See information on this servers jackpot.')
-    async def checkjackpot(self, interaction:discord.Interaction):
-        try:
-            response = economyresponses.checkjackpot(interaction.guild.name, interaction.guild.id)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('CHECKJACKPOT', [interaction.guild.id], e))
+    #--------------BEG--------------
+    #COOLDOWN: 10 Minutes
     
-    async def check_cooldown(self, interaction:discord.Interaction, user_id: int, guild_id: int, command: str):
-        current_time = time.time()
-        key = (user_id, guild_id, command)
-        if key in self.cooldowns and current_time < self.cooldowns[key]:
-            remaining_time = round(self.cooldowns[key] - current_time, 1)
-            if remaining_time > 60:
-                remaining_time = round(remaining_time / 60, 1)
-                unit = 'minutes'
-            else:
-                unit = 'seconds'
-            embed = discord.Embed(title='You\'re on cooldown.', description=f'Please wait {remaining_time} {unit}', color=discord.Color(0xFFFFFF))
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return True
-        if command == 'bonus':
-            self.cooldowns[key] = current_time + 86400
-        elif command == 'jackpot':
-            self.cooldowns[key] = current_time + 1800
-        elif command == 'beg':
-            self.cooldowns[key] = current_time + 120
-        else:
-            self.cooldowns[key] = current_time + 5
-        return False
+    @commands.command(name='beg')
+    @commands.cooldown(1, 600, commands.BucketType.guild)
+    async def beg_command(self, ctx):
+        try:
+            response = await economyresponses.beg(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('BEG', [ctx.author.id, ctx.guild.id], e))
+    
+    @beg_command.error
+    async def beg_error(self, ctx, error):
+        if isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Beg Cooldown.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------BALANCE--------------
+    
+    @commands.command(name='balance')
+    async def balance_command(self, ctx):
+        try:
+            response = await economyresponses.balance(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('BALANCE', [ctx.author.id , ctx.guild.id], e))
+
+    #--------------PLACEBET-------------
+    #team (REQUIRED): Three letter abbrev for your team
+    #wager (REQUIRED): 
+    
+    @commands.command(name='placebet')
+    async def bet_command(self, ctx, team: str, wager: float):
+        try:
+            response = await economyresponses.placebet(ctx.author.id, ctx.guild.id, team.upper(), wager, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('PLACEBET', [ctx.author.id, ctx.guild.id, team.upper(), wager], e))
+    
+    @bet_command.error
+    async def bet_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='placebet Usage',
+                description='$placebet **team** **wager**\nUse three letter abbrev for your team. Min wager is $10\n\nExample: ```$placebet SJS 400```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+
+    #--------------MYBETS-------------
+
+    @commands.command(name='mybets')
+    async def mybets_command(self, ctx):
+        try:
+            response = await economyresponses.mybets(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('MYBETS', [ctx.author.id, ctx.guild.id], e))
+
+    #--------------REMOVEBET-------------
+    #Team: Three letter abrrev for your team to remove
+    
+    @commands.command(name='removebet')
+    async def removebet_command(self, ctx, team: str):
+        try:
+            response = await economyresponses.removebet(ctx.author.id, ctx.guild.id, team, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('REMOVEBET', [ctx.author.id, ctx.guild.id, team], e))
+    
+    @removebet_command.error
+    async def removebet_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='removebet Usage',
+                description='$removebet **team**\nUse three letter abbrev for your team.\n\nExample: ```$removebet BOS```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+    
+    #--------------BETHISTORY-------------
+    
+    @commands.command(name='bethistory')
+    async def bethistory_command(self, ctx):
+        try:
+            response = await economyresponses.bethistory(ctx.author.id, ctx.guild.id, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(content=ctx.author.mention, embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('BETHISTORY', [ctx.author.id, ctx.guild.id], e))
+
+    #--------------LEADERBOARD-------------
+
+    @commands.command(name='leaderboard')
+    async def leaderboard_command(self, ctx):
+        try:
+            response = await economyresponses.leaderboard(ctx.guild.id)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('LEADERBOARD', [ctx.guild.id], e))
+    
+    #--------------SLOTS-------------
+    #Wager (REQUIRED): Number to wager $1, $2, $5, $50, $100.
+    
+    @commands.command(name='slots')
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def slots_command(self, ctx, wager: float):
+        try:
+            response = await economyresponses.slots(ctx.author.id, ctx.guild.id, wager, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('SLOTS', [wager, ctx.guild.id], e))
+        
+    @slots_command.error
+    async def slots_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='slots Usage',
+                description='$slots **wager**\nMachine accepts $1, $5, $10, $100.\n\nExample: ```$slots 10```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Slots Cooldown.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
+
+    #--------------COINFLIP-------------
+    #Side (REQUIRED): Heads or Tails (H or T).
+    
+    @commands.command(name='coinflip')
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def coinflip_command(self, ctx, side: str):
+        try:
+            response = await economyresponses.coinflip(ctx.author.id, ctx.guild.id, side, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('COINFLIP', [side, ctx.guild.id], e))
+    
+    @coinflip_command.error
+    async def coinflip_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='coinflip Usage',
+                description='$coinflip **side**\nWagers $10, Pick Heads or Tails (H or T).\n\nExample: ```$coinflip Heads```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Coinflip Cooldown.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
+    
+    #--------------ROULETTE-------------
+    #Color (OPTIONAL): Red or Black (R or B).
+    #Color Wager(OPTIONAL): Wager on your color.
+    #Number(OPTIONAL): 1-36
+    #Number Wager(OPTIONAL): Wager on your number.
+        
+    @commands.command(name='roulette')
+    @commands.cooldown(1, 5, commands.BucketType.guild)
+    async def roulette_command(self, ctx, category_one: Optional[str], category_one_wager: Optional[float], category_two: Optional[str], category_two_wager: Optional[float]):
+        try:
+            response = await economyresponses.roulette(ctx.author.id, ctx.guild.id, category_one, category_one_wager, category_two, category_two_wager, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('ROULETTE', [category_one, category_one_wager, category_two, category_two_wager, ctx.guild.id], e))
+    
+    @roulette_command.error
+    async def roulette_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='roulette Usage',
+                description='$roulette **color**[OPT] **color_wager**[OPT] **number**[OPT] **number_wager**[OPT]\nMust wager one at least one category.\n\nExample: ```$roulette Black 100 23 50```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Roulette Cooldown.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------JACKPOT-------------
+    #Wager: $1-$100. Higher wager == Higher odds
+    
+    @commands.command(name='jackpot')
+    @commands.cooldown(1, 3600, commands.BucketType.guild)
+    async def jackpot_command(self, ctx, amount: int):
+        try:
+            response = await economyresponses.jackpot(ctx.guild.id, ctx.author.id, amount, ctx.author.name, ctx.author.display_avatar.url)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('JACKPOT', [ctx.guild.id, amount], e))
+            
+    @jackpot_command.error
+    async def jackpot_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='jackpot Usage',
+                description='$coinflip **wager**\nHigher wager means better odds at spilling the pot.\n\nExample: ```$jackpot 100```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.CommandOnCooldown):
+            remaining_time = await cooldown_time(error.retry_after)
+            embed = discord.Embed(
+                title='Jackpot Cooldown.', 
+                description=f'Please wait {remaining_time}', 
+                color=discord.Color(0xFFFFFF)
+            )
+            await ctx.send(embed=embed)
+    
+    #--------------CHECKJACKPOT-------------
+    
+    @commands.command(name='checkjackpot')
+    async def checkjackpot(self, ctx):
+        try:
+            response = await economyresponses.checkjackpot(ctx.guild.name, ctx.guild.id)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('CHECKJACKPOT', [ctx.guild.id], e))
     
 class Moderator(commands.Cog):
-    @app_commands.command(name='startgame')
-    @app_commands.describe(team='Enter the team you want live updates for. This will send updates in whatever channel your typing this command.')
-    @app_commands.checks.has_permissions(administrator=True)
-    async def startgame_command(self, interaction: discord.Interaction, team: str):
-        try:
-            response = nhlresponses.startgame(team, interaction.channel.id, interaction.guild.id)
-            await interaction.response.send_message(embed=response)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('STARTGAME', [team], e))
+    #--------------CHECKJACKPOT-------------
+    #Team (REQUIRED): Three letter abbrev for your team
     
-    @app_commands.command(name='wipeuser', description='Remove a user from the economy.')
-    @app_commands.describe(username='Enter the discord username to wipe.')
-    @app_commands.checks.has_permissions(administrator=True)
-    async def wipeuser_command(self, interaction: discord.Interaction, username: str):
+    @commands.command(name='startgame')
+    @commands.has_permissions(administrator=True)
+    async def startgame_command(self, ctx, team: str):
         try:
-            response = modresponses.wipeuser(interaction.guild.id, username)
-            await interaction.response.send_message(embed=response, ephemeral=True)
+            response = await nhlresponses.startgame(team, ctx.channel.id, ctx.guild.id)
+            await ctx.send(embed=response)
         except Exception as e:
-            await interaction.response.send_message(embed=await return_error('WIPEUSER', [interaction.guild.id, username], e), ephemeral=True)
+            await ctx.send(embed=await return_error('STARTGAME', [team], e))
     
-    @app_commands.command(name='addmoney', description='Give a user money.')
-    @app_commands.describe(username='Enter the discord username to give money.')
-    @app_commands.describe(amount='Enter the amount to give.')
-    @app_commands.checks.has_permissions(administrator=True)
-    async def addmoney_command(self, interaction: discord.Interaction, username: str, amount: int):
-        try:
-            response = modresponses.addmoney(interaction.guild.id, username, amount)
-            await interaction.response.send_message(embed=response, ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('ADDMONEY', [interaction.guild.id, username, amount], e), ephemeral=True)
-    
-    @app_commands.command(name='takemoney', description='Take away a users money.')
-    @app_commands.describe(username='Enter the discord username to take money.')
-    @app_commands.describe(amount='Enter the amount to take.')
-    @app_commands.checks.has_permissions(administrator=True)
-    async def takemoney_command(self, interaction: discord.Interaction, username: str, amount: int):
-        try:
-            response = modresponses.takemoney(interaction.guild.id, username, amount)
-            await interaction.response.send_message(embed=response, ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('TAKEMONEY', [interaction.guild.id, username, amount], e), ephemeral=True)
-    
-    @app_commands.command(name='reseteconomy', description='WARNING: THIS WILL WIPE ALL DATA FOR YOUR USERS. NO TAKEBACKSIES!')
-    @app_commands.checks.has_permissions(administrator=True)
-    async def reseteconomy_command(self, interaction: discord.Interaction):
-        try:
-            response = modresponses.reseteconomy(interaction.guild.id) 
-            await interaction.response.send_message(embed=response, ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('RESETECONOMY', [interaction.guild.id], e), ephemeral=True)
-            
-    @app_commands.command(name='addroles', description='Create team roles for this server')
-    @app_commands.describe()
-    async def addroles_command(self, interaction: discord.Interaction):
-        try:
-            response = modresponses.addrolls(interaction.guild.id)
-            await interaction.response.send_message(embed=response, ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(embed=await return_error('ADDROLES', [interaction.guild.id], e), ephemeral=True)
-    
-    @addroles_command.error
     @startgame_command.error
+    async def startgame_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='startgame Usage',
+                description='$startgame **team**\nUse three letter abbrev for your team.\n\nExample: ```$startgame BOS```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+    
+    #--------------WIPEUSER-------------
+    #User (REQUIRED): Discord username or @username
+    
+    @commands.command(name='wipeuser')
+    @commands.has_permissions(administrator=True)
+    async def wipeuser_command(self, ctx, user: str):
+        try:
+            response = await modresponses.wipeuser(ctx.guild.id, user)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('WIPEUSER', [ctx.guild.id, user], e))
+    
     @wipeuser_command.error
+    async def wipeuser_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='wipeuser Usage',
+                description='$wipeuser **user**',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------ADDMONEY-------------
+    #User (REQUIRED): Discord username or @username
+    
+    @commands.command(name='addmoney')
+    @commands.has_permissions(administrator=True)
+    async def addmoney_command(self, ctx, user: str, amount: int):
+        try:
+            response = await modresponses.addmoney(ctx.guild.id, user, amount)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('ADDMONEY', [ctx.guild.id, user, amount], e))
+    
     @addmoney_command.error
+    async def addmoney_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='addmoney Usage',
+                description='$addmoney **user**',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------TAKEMONEY-------------
+    #User (REQUIRED): Discord username or @username
+    
+    @commands.command(name='takemoney')
+    @commands.has_permissions(administrator=True)
+    async def takemoney_command(self, ctx, user: str, amount: int):
+        try:
+            response = await modresponses.takemoney(ctx.guild.id, user, amount)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('TAKEMONEY', [ctx.guild.id, user, amount], e))
+    
     @takemoney_command.error
+    async def takemoney_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='takemoney Usage',
+                description='$takemoney **user**',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+
+    #--------------WIPEUSER-------------
+    #Confirmation (REQUIRED): Guild ID to make sure no accidental usage
+    
+    @commands.command(name='reseteconomy')
+    @commands.has_permissions(administrator=True)
+    async def reseteconomy_command(self, ctx, confirmation: int):
+        try:
+            response = await modresponses.reseteconomy(ctx.guild.id, confirmation) 
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('RESETECONOMY', [ctx.guild.id], e))
+    
     @reseteconomy_command.error
-    async def return_error(self, interaction: discord.Interaction, error):
-        embed = discord.Embed(
-            title='Error', 
-            color=discord.Color.red()
-        )
-        if isinstance(error, app_commands.MissingPermissions):
-            embed.add_field(
-                name='', 
-                value='You do not have permission for this.'
+    async def reseteconomy_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingPermissions):
+            embed = discord.Embed(
+                title='Error',
+                description='You don\'t have permission for this.', 
+                color=discord.Color.red()
             )
-        else:
-            embed.add_field(
-                name='', 
-                value='Check your parameters. If your parameters are fine there is likely a code issue.'
+            await ctx.send(embed=embed)
+        elif isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='Warning',
+                description='Run again with this guilds id\n```$reseteconomy guild_id```\n**WARNING**: This action is irreversable',
+                color=discord.Color.lighter_gray()
             )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed)
+    
+    #--------------ENABLEROLES-------------
+    
+    @commands.command(name='enableroles')
+    @commands.has_permissions(administrator=True)
+    async def enableroles_command(self, ctx):
+        try:
+            response = await modresponses.enableroles(ctx.guild)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('ENABLEROLES', [ctx.guild.id], e))
+            
+    #--------------DISABLEROLES-------------
+            
+    @commands.command(name='disableroles')
+    @commands.has_permissions(administrator=True)
+    async def disableroles_command(self, ctx):
+        try:
+            response = await modresponses.disableroles(ctx.guild)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('DISABLEROLES', [ctx.guild.id], e))
+            
+    #--------------PERMISSIONERROR-------------
+    
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.MissingPermissions):
+            embed = discord.Embed(
+                title='Error',
+                description='You don\'t have permission for this.', 
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
 
 class Scheduled(commands.Cog):
     def __init__(self, bot):
@@ -385,9 +650,19 @@ class Scheduled(commands.Cog):
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
-    embed.add_field(name='', value='Problem with your request. Check you parameters and retry the command', inline=False)
-    embed.set_footer(text='If your parameters are correct theres likely no results for your request. If this is a code issue, the error has been logged.')
+    embed.add_field(name='', value=f'This is 90% a code error', inline=False)
     return embed
+
+async def cooldown_time(cooldown: float) -> float:
+    if cooldown > 3600:
+        cooldown = round(cooldown / 3600, 1)
+        unit = 'hours'
+    elif cooldown > 60:
+        cooldown = round(cooldown / 60, 1)
+        unit = 'minutes'
+    else:
+        unit = 'seconds'
+    return (f'{round(cooldown, 2)} {unit}')
 
 async def setup(bot):
     if 'NHL' not in bot.cogs:
@@ -420,9 +695,29 @@ async def on_ready() -> None:
     print(f'{bot.user} is now running')
 
 @bot.event
+async def on_guild_join(guild):
+    try:
+        economyresponses.added_to_guild(guild.id)
+        nhl.log_data(f'I was just added to {guild.name}. ID:{guild.id}')
+    except Exception as e:
+        nhl.log_data(f'Error with adding GUILD to DB: {guild.name} ID:{guild.id} | ERR: {e}')
+    
+@bot.event
 async def on_guild_remove(guild):
-    nhl.log_data(f'I was just removed from {guild.name}. ID:{guild.id}')
-
+    try:
+        economyresponses.removed_from_guild(guild.id)
+        nhl.log_data(f'I was just removed from {guild.name}. ID:{guild.id}')
+    except Exception as e:
+        nhl.log_data(f'Error with removing GUILD from DB: {guild.name} ID:{guild.id} | ERR: {e}')
+    
+@bot.event
+async def on_guild_channel_delete(channel):
+    try:
+        economyresponses.channel_deleted(channel.id)
+        nhl.log_data(f'Channel was deleted {channel.name}. ID:{channel.id}')
+    except Exception as e:
+        nhl.log_data(f'Error with removing CHANNEL from DB: {channel.name} ID:{channel.id} | ERR: {e}')
+    
 def main() -> None:
     bot.run(TOKEN)
 

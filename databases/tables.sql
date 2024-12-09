@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS Update_List(
 
 CREATE TABLE IF NOT EXISTS Server_Settings(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER NOT NULL,
     roles_enabled INTEGER NOT NULL DEFAULT 0,
     update_roles_enabled INTEGER NOT NULL DEFAULT 0,
     create_game_channels INTEGER NOT NULL DEFAULT 0,

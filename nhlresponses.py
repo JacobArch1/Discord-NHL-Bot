@@ -4,7 +4,7 @@ import sqlite3
 from collections import defaultdict
 import nhl
 
-def get_info():
+async def get_info():
     embed = discord.Embed(
         title=f'Info For Commands', 
         color=discord.Color.light_gray()
@@ -21,7 +21,7 @@ def get_info():
     )
     embed.add_field(
         name='Slots Payouts', 
-        value=f'\n🍒 - 2x\n🍋 - 4x\n🍊- 8x\n🍎 - 10x\n💎 - $1,000\n💰 - $10,000\n\nClose Wins\n\tw/ 2x 💎 - $100 \n\tw/ 2x 💰 - $100\n\t w/ Other - 0.05x'
+        value=f'\n🍒 - 2x\n🍋 - 4x\n🍊- 8x\n🍎 - 10x\n💎 - $1,000\n💰 - $10,000\n\nClose Wins\n\tw/ 2x 💎 - $100 \n\tw/ 2x 💰 - $100'
     )
     embed.add_field(
         name='Roulette Payouts',
@@ -29,7 +29,7 @@ def get_info():
     )
     return embed
 
-def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
+async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT id FROM Players WHERE first_name == ? AND last_name == ?', (first_name, last_name,))
@@ -148,7 +148,7 @@ def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     embed.set_footer(text=f'{team_name}{'PID: ' + str(player_info['playerId']):>50}')
     return embed
 
-def get_standings(season: str) -> discord.Embed:
+async def get_standings(season: str) -> discord.Embed:
     if season == '':
         standings = nhl.get_current_standings()
         pre_title = 'Current'
@@ -203,35 +203,26 @@ def get_standings(season: str) -> discord.Embed:
 
     return embed
 
-def get_leaders(position: str, category: str) -> discord.Embed:
+async def get_leaders(category: str) -> discord.Embed:
     category = category.lower()
-    if category == ('savepctg'):
-        category = 'savePctg'
-    elif category == ('plusminus'):
-        category = 'plusMinus'
-    position = position.lower()
-    try:
-        if position == ('skater'):
-            results = nhl.get_current_skaters_stats_leaders(category, 10)
-        elif position == ('goalie'):
-            results = nhl.get_current_goalie_stats_leaders(category, 10)
-        else:
-            embed = discord.Embed(color=discord.Color.red())
-            embed.add_field(
-                name='Error', 
-                value='Position doesnt exist.', 
-                inline=False
-            )
-            return embed
-    except Exception:
+
+    if category in ('goals', 'assists', 'points', 'plusminus'):
+        if category == ('plusminus'):
+            category = 'plusMinus'
+        results = nhl.get_current_skaters_stats_leaders(category, 10)
+    elif category in ('wins','shutouts','savepctg'):
+        if category == ('savepctg'):
+            category = 'savePctg'
+        results = nhl.get_current_goalie_stats_leaders(category, 10)
+    else:
         embed = discord.Embed(color=discord.Color.red())
         embed.add_field(
             name='Error', 
-            value='Category doesnt exist.', 
+            value='Category Not Found.', 
             inline=False
         )
         return embed
-    
+
     embed = discord.Embed(
         title = 'Leaders for ' + category,
         color = discord.Color(0xFFFFFF)    
@@ -254,7 +245,10 @@ def get_leaders(position: str, category: str) -> discord.Embed:
 
     return embed
 
-def get_team_roster(team: str, season: str) -> discord.Embed:
+async def get_roster(team: str, season: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     team_stats = nhl.get_team_roster_by_season(team, season)
     if season == 'current':
         pre_title = 'Current'
@@ -266,13 +260,12 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
     )
 
     if 'goalies' not in team_stats:
-        embed = discord.Embed(color=discord.Color.red())
+        embed = discord.Embed(color=discord.Color.lighter_gray())
         embed.add_field(
             name='Error', 
             value='No roster available', 
             inline=False
         )
-        embed.set_footer(text='Check your paramters')
         return embed
     
     table = [
@@ -322,7 +315,7 @@ def get_team_roster(team: str, season: str) -> discord.Embed:
 
     return embed
 
-def get_playoff_bracket() -> discord.Embed:
+async def get_playoff_bracket() -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM Standings ORDER BY rowid DESC LIMIT 1')
@@ -360,7 +353,10 @@ def get_playoff_bracket() -> discord.Embed:
          
     return embed
 
-def get_team_schedule(team: str) -> discord.Embed:
+async def get_team_schedule(team: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     schedule = nhl.get_week_schedule_now(team)
     embed = discord.Embed(color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16)))
     if 'games' in schedule and not schedule['games']:
@@ -391,7 +387,7 @@ def get_team_schedule(team: str) -> discord.Embed:
     )
     return embed
 
-def get_league_schedule() -> discord.Embed:
+async def get_league_schedule() -> discord.Embed:
     schedule = nhl.get_current_schedule()
     games_today = schedule['gameWeek'][0]['games']
     
@@ -424,7 +420,10 @@ def get_league_schedule() -> discord.Embed:
         return embed
     return embed
 
-def get_live_score(team: str) -> discord.Embed:
+async def get_live_score(team: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
     now = datetime.now()
@@ -471,7 +470,10 @@ def get_live_score(team: str) -> discord.Embed:
     embed.set_footer(text=f'{scoreboard['gameState']}')
     return embed
 
-def get_game_story(team: str, date: str) -> discord.Embed:
+async def get_game_story(team: str, date: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
     game_id = 0
@@ -580,7 +582,8 @@ def get_game_story(team: str, date: str) -> discord.Embed:
             '2nd' if number == 2 else
             '3rd' if number == 3 else
             f'{number}th')
-        table.append(f'{number} Star: {star['name']} <:{star['teamAbbrev']}:{nhl.team_emojis.get(star['teamAbbrev'])}> Points: {star.get('points', 'X')}')
+        points = f'Points: {star.get('points', 'X')}'
+        table.append(f'{number} Star: {star['name']} <:{star['teamAbbrev']}:{nhl.team_emojis.get(star['teamAbbrev'])}> {points if points != 'Points: X' else ''}')
     table.append('')
     table.reverse()
     table = '\n'.join(table)
@@ -591,7 +594,10 @@ def get_game_story(team: str, date: str) -> discord.Embed:
     )
     return embed
 
-def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
+async def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
     now = datetime.now()

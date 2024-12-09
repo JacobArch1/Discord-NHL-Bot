@@ -3,8 +3,9 @@ import datetime
 import sqlite3
 import discord
 import random
+import nhl
 
-def register(user_id: int, user_name: str, guild_id: int, avatar: str) -> discord.Embed:
+async def register(user_id: int, user_name: str, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -43,7 +44,7 @@ def register(user_id: int, user_name: str, guild_id: int, avatar: str) -> discor
     conn.close()
     return embed
 
-def bonus(user_id: int, guild_id: str, avatar: str) -> discord.Embed:
+async def bonus(user_id: int, guild_id: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -85,7 +86,7 @@ def bonus(user_id: int, guild_id: str, avatar: str) -> discord.Embed:
     conn.close()
     return embed
 
-def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
+async def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -126,7 +127,7 @@ def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     
     return embed
 
-def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
+async def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
@@ -164,7 +165,10 @@ def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn.close()
     return embed
 
-def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: str, avatar: str) -> discord.Embed:
+async def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: str, avatar: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     current_time = datetime.datetime.now().time()
@@ -243,7 +247,7 @@ def placebet(user_id: int, guild_id: int, team: str, wager: float, user_name: st
     )
     return embed
 
-def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
+async def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -282,7 +286,7 @@ def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     conn.close()
     return embed
 
-def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> discord.Embed:
+async def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -321,7 +325,7 @@ def bethistory(user_id: int, guild_id: int, user_name: str, avatar: str) -> disc
     conn.close()
     return embed
 
-def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Embed:
+async def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
 
@@ -386,7 +390,7 @@ def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> discord.Em
     conn.close()
     return embed
 
-def leaderboard(guild_id: str) -> discord.Embed:
+async def leaderboard(guild_id: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT user_name, balance FROM User_Economy WHERE guild_id = ? ORDER BY balance DESC', (guild_id,))
@@ -411,7 +415,7 @@ def leaderboard(guild_id: str) -> discord.Embed:
     conn.close()
     return embed
 
-def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str) -> discord.Embed:
+async def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, wager, 1)
     if isinstance(results, discord.Embed):
@@ -492,7 +496,7 @@ def slots(user_id: int, guild_id: int, wager: float, user_name: str, avatar: str
     embed.set_thumbnail(url='https://icons.iconarchive.com/icons/microsoft/fluentui-emoji-3d/512/Slot-Machine-3d-icon.png')
     return embed
 
-def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avatar: str) -> discord.Embed:
+async def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, 10, 10)
     if isinstance(results, discord.Embed):
@@ -553,47 +557,66 @@ def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avatar: str
     embed.set_thumbnail(url='https://www.iconpacks.net/icons/1/free-coin-icon-794-thumb.png')
     return embed
 
-def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number: int, number_wager: float, user_name: str, avatar: str) -> discord.Embed:
+async def roulette(user_id: int, guild_id: int, category_one: str, category_one_wager: float, category_two: str, category_two_wager: float, user_name: str, avatar: str) -> discord.Embed:
+    color = None
+    color_wager = None
+    number = None
+    number_wager = None
     param_error = False
-    if color is not None:
-        color = color.lower()
-    if color is None and number is None:
+
+    category_one = category_one.lower() if category_one and isinstance(category_one, str) else category_one
+    category_two = category_two.lower() if category_two and isinstance(category_two, str) else category_two
+
+    if category_one is None and category_two is None:
         param_error = True
-        message = 'Select at least one category to bet on.' 
-    elif color is not None and color_wager is None:
+        message = 'Select at least one category to bet on.'
+    if (category_one and category_one_wager is None) or (category_two and category_two_wager is None):
         param_error = True
-        message = 'Provide a wager for your selected color.'
-    elif number is not None and number_wager is None:
+        message = 'Missing a wager.'
+    if category_one in ['r', 'b', 'red', 'black'] and category_two in ['r', 'b', 'red', 'black']:
         param_error = True
-        message = 'Provide a wager for your selected number.'
-    elif number_wager is not None and number is None:
+        message = 'You cannot bet on two colors.'
+
+    if category_one in ['red', 'r', 'black', 'b']:
+        color, color_wager = category_one, category_one_wager
+        number, number_wager = category_two, category_two_wager
+    elif category_two in ['red', 'r', 'black', 'b']:
+        color, color_wager = category_two, category_two_wager
+        number, number_wager = category_one, category_one_wager
+    else:
+        number, number_wager = category_one, category_one_wager
+
+    if color and color not in ['r', 'b', 'red', 'black']:
         param_error = True
-        message = 'Provide a number.'
-    elif color_wager is not None and color is None:
-        param_error = True
-        message = 'Provide a color.'
-    elif color is not None and color not in ['r', 'b', 'red', 'black']:
-        param_error = True
-        message = 'Please enter \'Red\' or \'Black\' for your color.'
-    if number is not None and not (1 <= number <= 36):
-        param_error = True
-        message = 'Number must be between 1 and 36.'
+        message = 'Please enter \'Red\' or \'Black\' (R/B) for your color.'
+
+    if number:
+        try:
+            number = int(number)
+            if not (1 <= number <= 36):
+                param_error = True
+                message = 'Number must be between 1 and 36.'
+        except ValueError:
+            param_error = True
+            message = 'Enter a valid number.'
+
     if param_error:
         embed = discord.Embed(
-            title='Error', 
+            title='Error',
             color=discord.Color.lighter_gray()
         )
         embed.set_author(
-            name='Roulette', 
+            name='Roulette',
             icon_url=avatar
         )
         embed.add_field(
-            name='', 
-            value=message, 
+            name='',
+            value=message,
             inline=False
         )
         return embed
     
+    color_guess = None
     if color in ['r', 'red']:
         color_guess = 'Red'
     elif color in ['b', 'black']:
@@ -604,11 +627,11 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     if color_wager is not None:
         wager += color_wager
         min_wager += 10
-        wager_title += f'${color_wager} on {color}'
+        wager_title += f'${color_wager} on {color_guess}\n'
     if number_wager is not None:
         wager += number_wager
         min_wager += 10
-        wager_title += f'\n${number_wager} on **[{number}]**'
+        wager_title += f'${number_wager} on **[{number}]**\n'
     
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, wager, min_wager)
@@ -653,14 +676,14 @@ def roulette(user_id: int, guild_id: int, color: str, color_wager: float, number
     )
     embed.add_field(
         name='',
-        value=f'Ball Landed On: {symbol}**[{ball}]** \n\n**Wager:** 💸\n{wager_title}\n\n**----{title}----**\n\n**Payout:** ${payout} 💵',
+        value=f'Ball Landed On: {symbol}**[{ball}]** \n\n**Wager:** 💸\n{wager_title}\n**----{title}----**\n\n**Payout:** ${payout} 💵',
         inline=False
     )
     embed.set_footer(text=f'{generate_phrase(wager, payout)}')
     embed.set_thumbnail(url='https://cdn-icons-png.flaticon.com/512/3425/3425938.png')
     return embed
 
-def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: str) -> discord.Embed:
+async def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     results = check_db(conn, user_id, guild_id, amount, 1)
     if isinstance(results, discord.Embed):
@@ -731,7 +754,7 @@ def jackpot(guild_id: int, user_id: int, amount: float, user_name: str, avatar: 
     
     return embed
 
-def checkjackpot(guild_name: str, guild_id: int) -> discord.Embed:
+async def checkjackpot(guild_name: str, guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM Jackpot WHERE guild_id = ?', (guild_id,))
@@ -794,6 +817,39 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
         c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (wager, guild_id, user_id))
         conn.commit()
         return True
+
+def added_to_guild(guild_id: int):
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    c.execute('INSERT INTO Server_Settings (guild_id, roles_enabled, update_roles_enabled, create_game_channels) VALUES (?, ?, ?, ?)', (guild_id, 0, 0, 0))
+    conn.commit()
+    conn.close()
+
+def removed_from_guild(guild_id: int):
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM User_Economy WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Jackpot WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Bet_History WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Betting_Pool WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Server_Settings WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Update_List WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    c.execute('DELETE FROM Server_Settings WHERE guild_id = ?', (guild_id,))
+    conn.commit()
+    conn.close()
+    
+def channel_deleted(channel_id: int):
+    conn = sqlite3.connect('./databases/main.db')
+    c = conn.cursor()
+    c.execute('DELETE FROM Update_List WHERE channel_id = ?', (channel_id,))
+    conn.commit()
+    conn.close()
     
 def generate_phrase(wager: float, payout: float):
     loss_phrases = [
@@ -832,7 +888,8 @@ def generate_phrase(wager: float, payout: float):
         'This win will be paid out over 5 years.',
         'Everyone loves you!',
         'Gambling ALWAYS pays off!',
-        'Is this going to your kids? Or back in the machine?'
+        'Is this going to your kids? Or back in the machine?',
+        'This isn\'t real money btw.'
     ]
     
     won = payout > 0
