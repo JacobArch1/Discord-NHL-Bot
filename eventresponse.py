@@ -61,7 +61,7 @@ async def send_events(game_id: int, update_list: list, bot):
             if channel:
                 c.execute('UPDATE Update_List SET last_event_id = ? WHERE channel_id = ? AND game_id = ?', (event_id, channel_id, game_id,))
                 conn.commit()
-                await channel.send(embed=embed)
+                await channel.send(embed=embed, silent=True)
     conn.close()
 
 async def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int, game_id: int) -> discord.Embed:

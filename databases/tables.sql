@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS Update_List(
     guild_id INTEGER NOT NULL,
     game_id INTEGER NOT NULL,
     game_type INTEGER NOT NULL,
+    update_role INTEGER NOT NULL DEFAULT 0,
     channel_id INTEGER NOT NULL,
     last_event_id INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

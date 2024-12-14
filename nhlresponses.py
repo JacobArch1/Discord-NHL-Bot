@@ -30,6 +30,8 @@ async def get_info():
     return embed
 
 async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
+    first_name = first_name.capitalize()
+    last_name = last_name.capitalize()
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT id FROM Players WHERE first_name == ? AND last_name == ?', (first_name, last_name,))
@@ -129,18 +131,15 @@ async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     formatted_table = '\n'.join(table)
 
     embed = discord.Embed(
-        title=f'{player_info['firstName']['default']} {player_info['lastName']['default']}',
+        title=f'{player_info['firstName']['default']} {player_info['lastName']['default']} #{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]',
         color = discord.Color(int(nhl.teams_colors.get(player_info.get('currentTeamAbbrev', '???'), '#FFFFFF').lstrip('#'), 16))
-    )
-    embed.set_author(
-        name=f'#{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]', 
-        icon_url=player_info.get('headshot')
     )
     embed.add_field(
         name='Career Statistics', 
         value=formatted_table, 
         inline=False
     )
+    embed.set_thumbnail(url=player_info.get('headshot'))
     if 'fullTeamName' in player_info:
         team_name = player_info['fullTeamName'].get('default', 'Unknown Team')
     else:

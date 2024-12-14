@@ -8,7 +8,6 @@ import nhlresponses
 import economyresponses
 import modresponses
 import schedules
-from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 from typing import Final, Optional
@@ -19,6 +18,7 @@ TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
+intents.members = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 class InfoView(discord.ui.View):
@@ -477,15 +477,17 @@ class Economy(commands.Cog):
             await ctx.send(embed=await return_error('CHECKJACKPOT', [ctx.guild.id], e))
     
 class Moderator(commands.Cog):
-    #--------------CHECKJACKPOT-------------
+    #--------------STARTGAME-------------
     #Team (REQUIRED): Three letter abbrev for your team
+    #-u (OPTIONAL): Create an update role accessed by a reaction
     
     @commands.command(name='startgame')
     @commands.has_permissions(administrator=True)
-    async def startgame_command(self, ctx, team: str):
+    async def startgame_command(self, ctx, team: str, update_modifier: Optional[str]):
         try:
             response = await nhlresponses.startgame(team, ctx.channel.id, ctx.guild.id)
-            await ctx.send(embed=response)
+            await ctx.send(embed=response, delete_after=5)
+            await ctx.message.delete()
         except Exception as e:
             await ctx.send(embed=await return_error('STARTGAME', [team], e))
     
@@ -494,7 +496,7 @@ class Moderator(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='startgame Usage',
-                description='$startgame **team**\nUse three letter abbrev for your team.\n\nExample: ```$startgame BOS```',
+                description='$startgame **team** **-u**[OPT]\nUse three letter abbrev for your team. -u will create a role that will ping with each update as well as pin this message to the channel\n\nExample: ```$startgame BOS```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
