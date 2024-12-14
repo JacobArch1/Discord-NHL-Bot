@@ -522,7 +522,7 @@ class Moderator(commands.Cog):
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
-            
+    
     #--------------ADDMONEY-------------
     #User (REQUIRED): Discord username or @username
     
