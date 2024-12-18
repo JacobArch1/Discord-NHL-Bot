@@ -82,7 +82,7 @@ async def reseteconomy(guild_id: int, confirmation: int) -> discord.Embed:
     )
     return embed
 
-async def enableroles(guild: discord.guild) -> discord.Embed:
+async def enableroles(guild: discord.Guild) -> discord.Embed:
     try:
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
@@ -115,7 +115,7 @@ async def enableroles(guild: discord.guild) -> discord.Embed:
         )
     return embed
     
-async def disableroles(guild: discord.guild) -> discord.Embed:
+async def disableroles(guild: discord.Guild) -> discord.Embed:
     try:
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()

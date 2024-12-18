@@ -170,63 +170,16 @@ async def placebet(user_id: int, guild_id: int, team: str, wager: float, user_na
     if isinstance(verified, discord.Embed):
         return verified
     conn = sqlite3.connect('./databases/main.db')
-    c = conn.cursor()
-    current_time = datetime.datetime.now().time()
-    current_date = str(date.today())
-    c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (team, team, current_date))
-    game = c.fetchone()
-    if game is None:
-        embed = discord.Embed(
-            title='Error', 
-            color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='The team you selected is not playing today.', 
-            inline=False
-        )
-        return embed
-    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
-    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
-    if current_time > close_time:
-        embed = discord.Embed(
-            title='Error', 
-            color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='Bets for this game are closed.', 
-            inline=False
-        )
-        return embed
+    
     results = check_db(conn, user_id, guild_id, wager, 10)
     if isinstance(results, discord.Embed):
         return results
-    c.execute('SELECT user_id FROM Betting_Pool WHERE guild_id = ? AND user_id = ? AND game_id = ?', (guild_id, user_id, game[1],))
-    user = c.fetchone()
-    if user:
-        embed = discord.Embed(
-            title='Error', 
-            color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='You have already placed a bet on this game.', 
-            inline=False
-        )
-        return embed
+    
+    game = check_bet_valid(conn, team)
+    if isinstance(game, discord.Embed):
+        return game
+    
+    c = conn.cursor()
     game_id = game[1]
     game_type = game[4]
 
@@ -234,16 +187,12 @@ async def placebet(user_id: int, guild_id: int, team: str, wager: float, user_na
     conn.commit()
     embed = discord.Embed(
         title=f'{user_name} Placed a bet.', 
+        description=f'${round(wager,2)} on {team.upper()}', 
         color=discord.Color.green()
     )
     embed.set_author(
         name='Bet', 
         icon_url=avatar
-    )
-    embed.add_field(
-        name='', 
-        value=f'${round(wager,2)} on {team.upper()}', 
-        inline=False
     )
     return embed
 
@@ -256,16 +205,8 @@ async def mybets(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     if not bets:
         embed = discord.Embed(
             title='Error', 
+            description='You do not have any bets placed.', 
             color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Bets', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='You do not have any bets placed.', 
-            inline=False
         )
     else:
         embed = discord.Embed(
@@ -343,29 +284,14 @@ async def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> disc
     if bet is None:
         embed = discord.Embed(
             title='Error', 
+            description='Could not find bet.', 
             color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Remove Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='Could not find bet.', 
-            inline=False
         )
     elif current_time > close_time:
         embed = discord.Embed(
             title='Error', 
+            description='Betting for this game is closed. Cannot remove bet.',
             color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Remove Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='Betting for this game is closed. Cannot remove bet.'
         )
     else:
         refund = bet[6]
@@ -375,16 +301,8 @@ async def removebet(user_id: int, guild_id: int, team: str, avatar: str) -> disc
 
         embed = discord.Embed(
             title='Success!', 
+            description='Your bet has been removed.', 
             color=discord.Color.green()
-        )
-        embed.set_author(
-            name='Remove Bet', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='Your bet has been removed.', 
-            inline=False
         )
 
     conn.close()
@@ -506,16 +424,8 @@ async def coinflip(user_id: int, guild_id: int, side: str, user_name: str, avata
     if side not in ['h', 't', 'heads', 'tails']:
         embed = discord.Embed(
             title='Error', 
+            description='Please enter \'H\' or \'T\'.', 
             color=discord.Color.lighter_gray()
-        )
-        embed.set_author(
-            name='Coin Flip', 
-            icon_url=avatar
-        )
-        embed.add_field(
-            name='', 
-            value='Please enter \'H\' or \'T\'.', 
-            inline=False
         )
         return embed
     
@@ -777,6 +687,177 @@ async def checkjackpot(guild_name: str, guild_id: int) -> discord.Embed:
     
     return embed
 
+async def hockeypoker(bot, guild_id: int, user_id: int, opponent: str, team: str, wager: float) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
+    
+    conn = sqlite3.connect('./databases/main.db')
+    results = check_db(conn, user_id, guild_id, wager, 100)
+    if isinstance(results, discord.Embed):
+        return results
+    
+    opponent_id = get_id(conn, guild_id, opponent)
+    if isinstance(opponent_id, discord.Embed):
+        return opponent_id
+    
+    c = conn.cursor()
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (guild_id, opponent_id[0],))
+    balance = c.fetchone()
+    if balance[0] < wager:
+        embed = discord.Embed(
+            title='Error',
+            description='User cannot match wager.',
+            color=discord.Color.lighter_grey()
+        )
+        return embed
+
+    game = check_bet_valid(conn, team)
+    if isinstance(game, discord.Embed):
+        return game
+    
+    c.execute(f'SELECT user_id FROM Poker_Pool WHERE guild_id = ? AND user_id = ? AND game_id = ?', (guild_id, user_id, game[1],))
+    user_playing = c.fetchone()
+    if user_playing:
+        embed = discord.Embed(
+            title='Error', 
+            description='You are already playing this game.', 
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    
+    c.execute('SELECT user_id FROM Poker_Pool WHERE guild_id = ? AND opponent_id = ? AND game_id = ?', (guild_id, opponent_id[0], game[1],))
+    opponent_playing = c.fetchone()
+    if opponent_playing:
+        embed = discord.Embed(
+            title='Error', 
+            description='Opponent is already playing this game or has an active request.', 
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    
+    user = await bot.fetch_user(user_id)
+    away_team = game[2]
+    home_team = game[3]
+    user_team = None
+    opponent_team = None
+    
+    if away_team == team:
+        user_team = away_team
+        opponent_team = home_team
+    else:
+        user_team = home_team
+        opponent_team = away_team
+    
+    challenge_msg = discord.Embed(
+        title='Hockey Poker Challenge!',
+        description=f'{user.name} has challenged you to hockey poker.\nYou will be playing as {opponent_team} against {user_team}',
+        color=discord.Color.gold()
+    )
+    
+    opponent_user = await bot.fetch_user(opponent_id[0])
+    await opponent_user.send(embed=challenge_msg, view=ChallengeView(opponent_id[0], guild_id, wager))
+    
+    embed = discord.Embed(
+        title='Success', 
+        description=f'Your challenge has been sent to {opponent_user.name}.', 
+        color=discord.Color.green()
+    )
+    
+    c.execute('INSERT INTO Poker_Pool (game_id, game_type, guild_id, user_id, opponent_id, user_team, opponent_team, user_pot, opponent_pot) VALUES (?,?,?,?,?,?,?,?,?)', 
+              (game[1], game[4], guild_id, user_id, opponent_id[0], user_team, opponent_team, wager, wager))
+    
+    conn.commit()
+    conn.close()
+    return embed
+
+class ChallengeView(discord.ui.View):
+    def __init__(self, user_id: int, guild_id: int, wager: int):
+        super().__init__(timeout=None)
+        self.user_id = user_id
+        self.guild_id = guild_id
+        self.wager = wager
+    
+    @discord.ui.button(label='Accept', style=discord.ButtonStyle.success)
+    async def accept_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
+        
+        conn = sqlite3.connect('./databases/main.db')
+        c = conn.cursor()
+        c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (self.guild_id, self.user_id,))
+        balance = c.fetchone()
+        if balance[0] < self.wager:
+            embed = discord.Embed(
+                title='Error',
+                description='You don\'t have enough money.',
+                color=discord.Color.lighter_grey()
+            )
+            return embed
+        
+        embed = discord.Embed(
+            title='Challenge Accepted!',
+            description='Bot will DM you when the game starts',
+            color=discord.Color.gold()
+        )
+        
+        c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (self.wager, self.guild_id, self.user_id,))
+        conn.commit()
+        c.execute('UPDATE Poker_Pool SET opponent_accepted = 1 WHERE opponent_id = ?', (self.user_id,))
+        conn.commit()
+        conn.close()
+    
+        await interaction.response.edit_message(embed=embed, view=None)
+        
+    @discord.ui.button(label='Decline', style=discord.ButtonStyle.danger)
+    async def decline_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
+        
+        embed = discord.Embed(
+            title='Challenge Declined',
+            description='Opponent has been notified.',
+            color=discord.Color.red()
+        )
+        
+        conn = sqlite3.connect('./databases/main.db')
+        c = conn.cursor()
+        c.execute('SELECT * FROM Poker_Pool WHERE opponent_id = ?', (self.user_id,))
+        match_data = c.fetchone()
+        opponent_wager = match_data[8]
+        opponent_id = match_data[4]
+        
+        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (opponent_wager, self.guild_id, opponent_id,))
+        c.execute('DELETE FROM Poker_Pool WHERE opponent_id = ?', (self.user_id,))
+        conn.commit()
+        conn.close()
+        
+        await interaction.response.edit_message(embed=embed, view=None)
+
+def get_id(conn, guild_id: int, user:str) -> int:
+    c = conn.cursor()
+    user_id = None
+    
+    if '@' in user:
+        user_id = user.replace('<@', '')
+        user_id = user_id.replace('>','')
+        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
+        user_id = c.fetchone()
+    else:
+        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, user,))
+        user_id = c.fetchone()
+    
+    if user_id is None:
+        embed = discord.Embed(
+            title='Error',
+            description='User not found or not registered',
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    return user_id
+
 def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) -> bool:
     c = conn.cursor()
     c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
@@ -817,6 +898,30 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
         c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (wager, guild_id, user_id))
         conn.commit()
         return True
+
+def check_bet_valid(conn, team: str) -> list:
+    c = conn.cursor()
+    current_time = datetime.datetime.now().time()
+    current_date = str(date.today())
+    c.execute('SELECT * FROM Current_Games WHERE home_team = ? OR away_team = ? AND start_date = ?', (team, team, current_date))
+    game = c.fetchone()
+    if game is None:
+        embed = discord.Embed(
+            title='Error',
+            description='The team you selected is not playing today.', 
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    game_start_time = datetime.datetime.strptime(game[6], '%H:%M:%S').time()
+    close_time = (datetime.datetime.combine(datetime.datetime.today(), game_start_time) - timedelta(minutes=10)).time()
+    if current_time > close_time:
+        embed = discord.Embed(
+            title='Error', 
+            description='Bets for this game are closed.', 
+            color=discord.Color.lighter_gray()
+        )
+        return embed
+    return game
 
 def added_to_guild(guild_id: int):
     conn = sqlite3.connect('./databases/main.db')

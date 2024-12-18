@@ -4,28 +4,11 @@ import sqlite3
 from collections import defaultdict
 import nhl
 
-async def get_info():
+async def get_help():
     embed = discord.Embed(
-        title=f'Info For Commands', 
-        color=discord.Color.light_gray()
-    )
-    embed.add_field(
-        name='Betting Payouts', 
-        value=f'```Preseason Game 1.25x\nRegular Season Game 2x\nPlayoff Game 3x```', 
-        inline=False
-    )
-    embed.add_field(
-        name='Known Leader Categories', 
-        value=f'```\nGoalies\n\twins\n\tshutouts\n\tsavePctg\nSkaters\n\tgoals\n\tassists\n\tpoints\n\tplusMinus```', 
-        inline=False
-    )
-    embed.add_field(
-        name='Slots Payouts', 
-        value=f'\n🍒 - 2x\n🍋 - 4x\n🍊- 8x\n🍎 - 10x\n💎 - $1,000\n💰 - $10,000\n\nClose Wins\n\tw/ 2x 💎 - $100 \n\tw/ 2x 💰 - $100'
-    )
-    embed.add_field(
-        name='Roulette Payouts',
-        value=f'Color Match (🔴/⚫) - 2x\nNumber Match - 10x'
+        title=f'Help',
+        description='Click the buttons to get info about commands',
+        color=discord.Color.lighter_gray()
     )
     return embed
 
@@ -131,15 +114,18 @@ async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
     formatted_table = '\n'.join(table)
 
     embed = discord.Embed(
-        title=f'{player_info['firstName']['default']} {player_info['lastName']['default']} #{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]',
+        title='',
         color = discord.Color(int(nhl.teams_colors.get(player_info.get('currentTeamAbbrev', '???'), '#FFFFFF').lstrip('#'), 16))
+    )
+    embed.set_author(
+        name=f'{player_info['firstName']['default']} {player_info['lastName']['default']} #{player_info.get('sweaterNumber', '?')} [{player_info.get('position', '?')}]', 
+        icon_url=player_info.get('headshot')
     )
     embed.add_field(
         name='Career Statistics', 
         value=formatted_table, 
         inline=False
     )
-    embed.set_thumbnail(url=player_info.get('headshot'))
     if 'fullTeamName' in player_info:
         team_name = player_info['fullTeamName'].get('default', 'Unknown Team')
     else:
@@ -186,11 +172,18 @@ async def get_standings(season: str) -> discord.Embed:
     for division, teams in divisions.items():
         table = [
             '```',
-            f'{'Team':<15}{'W':>5}{'L':>5}{'P':>5}\n',
+            f'{'Team':<23}{'GP':>4}{'W':>4}{'L':>4}{'OTL':>5}{'P':>4}{'STR':>4}\n',
         ]
         for team in teams:
-            teamname = f'{team['teamAbbrev']['default']} {team.get('clinchIndicator', '')}'
-            table.append(f'{teamname:<15}{team.get('wins', 0):>5}{team.get('losses', 0):>5}{team.get('points', 0):>5}')
+            games_played = team.get('homeGamesPlayed', 0) + team.get('roadGamesPlayed')
+            wins = team.get('wins', 0)
+            losses = team.get('losses', 0)
+            ot_losses = team.get('homeOtLosses', 0) + team.get('roadOtLosses', 0)
+            points = team.get('points', 0)
+            streak = f'{team.get('streakCode', '?')}{team.get('streakCount', 0)}'
+            
+            teamname = f'{nhl.teams.get(team['teamAbbrev']['default'])} {team.get('clinchIndicator', '')}'
+            table.append(f'{teamname:<23}{games_played:>4}{wins:>4}{losses:>4}{ot_losses:>5}{points:>4}{streak:>4}')
         table.append('```')
         formatted_table = '\n'.join(table)
         embed.add_field(
@@ -248,17 +241,9 @@ async def get_roster(team: str, season: str) -> discord.Embed:
     verified = nhl.verify_team(team)
     if isinstance(verified, discord.Embed):
         return verified
-    team_stats = nhl.get_team_roster_by_season(team, season)
-    if season == 'current':
-        pre_title = 'Current'
-    else:
-        pre_title = season[:4] + '-' + season[4:]
-    embed = discord.Embed(
-        title = f'<:{team}:{nhl.team_emojis.get(team)}> {pre_title} Roster For {team}',
-        color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16))    
-    )
-
-    if 'goalies' not in team_stats:
+    team_roster = nhl.get_team_roster_by_season(team, season)
+    
+    if 'goalies' not in team_roster:
         embed = discord.Embed(color=discord.Color.lighter_gray())
         embed.add_field(
             name='Error', 
@@ -267,11 +252,20 @@ async def get_roster(team: str, season: str) -> discord.Embed:
         )
         return embed
     
+    if season == 'current':
+        pre_title = 'Current'
+    else:
+        pre_title = season[:4] + '-' + season[4:]
+    embed = discord.Embed(
+        title = f'<:{team}:{nhl.team_emojis.get(team)}> {pre_title} Roster For {team}',
+        color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16))    
+    )
+    
     table = [
         '```',
         f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
-    for player in team_stats['goalies']:
+    for player in team_roster['goalies']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
         table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
@@ -286,7 +280,7 @@ async def get_roster(team: str, season: str) -> discord.Embed:
         '```',
         f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
-    for player in team_stats['forwards']:
+    for player in team_roster['forwards']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
         table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
@@ -301,7 +295,66 @@ async def get_roster(team: str, season: str) -> discord.Embed:
         '```',
         f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
     ]
-    for player in team_stats['defensemen']:
+    for player in team_roster['defensemen']:
+        playername = f'{player['firstName']['default']} {player['lastName']['default']}'
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+    table.append('```')
+    defense_table = '\n'.join(table)
+    embed.add_field(
+        name='Defensemen',
+          value=defense_table[:1024], 
+          inline=False
+    )
+
+    return embed
+
+async def get_prospects(team: str) -> discord.Embed:
+    verified = nhl.verify_team(team)
+    if isinstance(verified, discord.Embed):
+        return verified
+    
+    team_roster = nhl.get_team_prospects(team)
+    
+    embed = discord.Embed(
+        title = f'<:{team}:{nhl.team_emojis.get(team)}> Prospects For {team}',
+        color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16))    
+    )
+    
+    table = [
+        '```',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
+    ]
+    for player in team_roster['goalies']:
+        playername = f'{player['firstName']['default']} {player['lastName']['default']}'
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+    table.append('```')
+    goalie_table = '\n'.join(table)
+    embed.add_field(
+        name='Goalies', 
+        value=goalie_table[:1024], 
+        inline=False
+    )
+
+    table = [
+        '```',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
+    ]
+    for player in team_roster['forwards']:
+        playername = f'{player['firstName']['default']} {player['lastName']['default']}'
+        table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
+    table.append('```')
+    forward_table = '\n'.join(table)
+    embed.add_field(
+        name='Forwards', 
+        value=forward_table[:1024], 
+        inline=False
+    )
+
+    table = [
+        '```',
+        f'{'#':<3}{'Name':<25}{'Ht':>3}{'Wt':>4}\n',
+    ]
+    for player in team_roster['defensemen']:
         playername = f'{player['firstName']['default']} {player['lastName']['default']}'
         table.append(f'{player.get('sweaterNumber', '-'):<3}{playername:<25}{player.get('heightInInches','-'):>3}{player.get('weightInPounds','-'):>4}')
     table.append('```')
@@ -349,7 +402,7 @@ async def get_playoff_bracket() -> discord.Embed:
             value=table, 
             inline=False
         )
-         
+
     return embed
 
 async def get_team_schedule(team: str) -> discord.Embed:
@@ -357,15 +410,12 @@ async def get_team_schedule(team: str) -> discord.Embed:
     if isinstance(verified, discord.Embed):
         return verified
     schedule = nhl.get_week_schedule_now(team)
-    embed = discord.Embed(color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16)))
-    if 'games' in schedule and not schedule['games']:
-        embed.add_field(
-            name=f'{team} Week Schedule', 
-            value=f'There are no games scheduled for {team} this week'
-        )
-        return embed
-    
-    table = ['']
+    embed = discord.Embed(
+        title=f'{nhl.teams.get(team)} Week Schedule',
+        color = discord.Color(int(nhl.teams_colors.get(team, '#FFFFFF').lstrip('#'), 16))
+    )
+
+    empty_list = True
 
     for game in schedule['games']:
         venue = game['venue']['default']
@@ -376,14 +426,18 @@ async def get_team_schedule(team: str) -> discord.Embed:
         home_team = game['homeTeam']['abbrev']
         away_team = game['awayTeam']['abbrev']
 
-        table.append(f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> {time} {symbol} {venue}')
-    
-    table = '\n'.join(table)
-    embed.add_field(
-        name=f'{team} Week Schedule', 
-        value=table, 
-        inline=False
-    )
+        embed.add_field(
+            name='',
+            value=f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team} @ {home_team} <:{home_team}:{nhl.team_emojis.get(home_team)}> {time} {symbol} {venue}',
+            inline=False
+        )
+        empty_list = False
+    if empty_list:
+        embed.add_field(
+            name=f'No Games Scheduled For {team} This week', 
+            value=''
+        )
+        return embed
     return embed
 
 async def get_league_schedule() -> discord.Embed:
@@ -499,7 +553,7 @@ async def get_game_story(team: str, date: str) -> discord.Embed:
 
     home_score = game_story['homeTeam']['score']
     away_score = game_story['awayTeam']['score']
-    description = (f'Score: <:{home_team}:{nhl.team_emojis.get(home_team)}> **{home_score} - {away_score} ** <:{away_team}:{nhl.team_emojis.get(away_team)}>')
+    description = (f'Final Score: <:{home_team}:{nhl.team_emojis.get(home_team)}> **{home_score} - {away_score} ** <:{away_team}:{nhl.team_emojis.get(away_team)}>')
 
     embed = discord.Embed(
         title=title, 
@@ -593,10 +647,56 @@ async def get_game_story(team: str, date: str) -> discord.Embed:
     )
     return embed
 
-async def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
+class GameView(discord.ui.View):
+    def __init__(self, user_id: str, role: discord.Role, guild: discord.Guild):
+        super().__init__(timeout=None)
+        self.user_id = user_id
+        self.role = role
+        self.guild = guild
+    
+    @discord.ui.button(label='Get Update Role', style=discord.ButtonStyle.success)
+    async def add_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        member = interaction.user
+
+        if self.role in member.roles:
+            await interaction.response.send_message(content='You already have the role.', ephemeral=True, delete_after=5)
+            return
+
+        await member.add_roles(self.role)
+        await interaction.response.send_message(content='Done! You will be pinged with updates.', ephemeral=True, delete_after=5)
+        
+    @discord.ui.button(label='Remove Update Role', style=discord.ButtonStyle.gray)
+    async def remove_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        member = interaction.user
+        
+        if self.role not in member.roles:
+            await interaction.response.send_message(content='You do not have the role.', ephemeral=True, delete_after=5)
+            return
+
+        await member.remove_roles(self.role)
+        await interaction.response.send_message(content='Done! You will no longer get update pings.', ephemeral=True, delete_after=5)
+        
+    @discord.ui.button(label='📌', style=discord.ButtonStyle.gray)
+    async def pin_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message('You don\'t have permission to pin.', ephemeral=True)
+            return
+        
+        content = 'Pinned.'
+        if interaction.message.pinned:
+            await interaction.message.unpin()
+            content = 'Unpinned.'
+        else:
+            await interaction.message.pin()
+            
+        await interaction.response.send_message(content=content, ephemeral=True, delete_after=3)
+
+
+async def startgame(team: str, channel_id: int, guild: discord.Guild, update_modifier: str, ctx) -> discord.Embed:
     verified = nhl.verify_team(team)
     if isinstance(verified, discord.Embed):
         return verified
+    
     results = nhl.get_team_scoreboard(team)
     games = results['gamesByDate']
     now = datetime.now()
@@ -606,14 +706,16 @@ async def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
+    desired_game = None
+    
     for game in games:
         date = game['date']
         game_state = game['games'][0]['gameState']
 
         if game_state == 'LIVE' or date == today:
-            game_id = game['games'][0]['id']
+            desired_game = game['games'][0]
             break
-    if game_id == 0:
+    if not desired_game:
         embed = discord.Embed(
             title='Error', 
             color=discord.Color.lighter_gray(), 
@@ -628,7 +730,9 @@ async def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
         )
         return embed
     
-    c.execute('SELECT * FROM Update_List WHERE guild_id = ? AND channel_id = ? AND game_id = ?', (guild_id, channel_id, game_id, ))
+    game_id = desired_game['id']
+    
+    c.execute('SELECT * FROM Update_List WHERE guild_id = ? AND channel_id = ? AND game_id = ?', (guild.id, channel_id, game_id,))
     result = c.fetchone()
     
     if result is not None:
@@ -639,16 +743,37 @@ async def startgame(team: str, channel_id: int, guild_id: int) -> discord.Embed:
         )
         return embed
     
-    c.execute('INSERT INTO Update_List (guild_id, game_id, game_type, channel_id) VALUES (?, ?, ?, ?)', (guild_id, game_id, 2, channel_id,))
+    c.execute('INSERT INTO Update_List (guild_id, game_id, game_type, channel_id) VALUES (?, ?, ?, ?)', (guild.id, game_id, 2, channel_id,))
     conn.commit()
-    conn.close()
     
+    away_team = desired_game['awayTeam']['abbrev']
+    home_team = desired_game['homeTeam']['abbrev']
+    est_offset = abs(int(desired_game['easternUTCOffset'].split(":")[0]))
+    time = timestamp(desired_game['startTimeUTC'], est_offset, 't')
+    venue = desired_game['venue']['default']
+    
+    game_msg = discord.Embed(
+        title=f'<:{away_team}:{nhl.team_emojis.get(away_team)}> {nhl.teams.get(away_team)} @ <:{home_team}:{nhl.team_emojis.get(home_team)}> {nhl.teams.get(home_team)}',
+        description=f'**Start Time**: {time}\n**Arena**: {venue}',
+        color=discord.Color.lighter_grey()
+    )
+    
+    if update_modifier == '-u':
+        role_name = f'{away_team}v{home_team} Updates'
+        role = await guild.create_role(name=role_name, permissions=discord.Permissions.none(), color=discord.Color.lighter_gray())
+        c.execute('UPDATE Update_List SET update_role_id = ? WHERE game_id = ? AND channel_id = ?', (role.id, game_id, channel_id))
+        conn.commit()
+        await ctx.send(embed=game_msg, view=GameView(ctx.author.id, role, guild))
+    else:
+        await ctx.send(embed=game_msg)
+        
     embed = discord.Embed(
         title='Done!', 
         color=discord.Color.green(), 
         description=f'This channel will begin recieving game updates for {team}.'
     )
     
+    conn.close()
     return embed
 
 def timestamp(time: str, offset: int, type: chr) -> str:

@@ -50,10 +50,20 @@ async def send_events(game_id: int, update_list: list, bot):
     
     for channel_id in update_list:
         c = conn.cursor()
-        c.execute('SELECT last_event_id FROM Update_List WHERE channel_id = ? AND game_id = ?', (channel_id, game_id,))
-        last_event_id = c.fetchone()
-
-        if event_id != last_event_id[0]:
+        c.execute('SELECT * FROM Update_List WHERE channel_id = ? AND game_id = ?', (channel_id, game_id,))
+        subscriber = c.fetchone()
+        
+        last_event_id = subscriber[5]
+        guild_id = subscriber[1]
+        role_id = subscriber[6]
+        
+        content = None
+        if role_id != 0:
+            guild = bot.get_guild(guild_id)
+            role = discord.utils.get(guild.roles, id=role_id)
+            content = f'{role.mention}' if role else None
+        
+        if event_id != last_event_id:
             embed = await craft_embed(event, event_type, away_team, home_team, away_score, home_score, game_id)
             if isinstance(embed, bool):
                 return 
@@ -61,7 +71,7 @@ async def send_events(game_id: int, update_list: list, bot):
             if channel:
                 c.execute('UPDATE Update_List SET last_event_id = ? WHERE channel_id = ? AND game_id = ?', (event_id, channel_id, game_id,))
                 conn.commit()
-                await channel.send(embed=embed, silent=True)
+                await channel.send(content=content, embed=embed)
     conn.close()
 
 async def craft_embed(event: dict, type: str, away_team: dict, home_team: dict, away_score: int, home_score: int, game_id: int) -> discord.Embed:

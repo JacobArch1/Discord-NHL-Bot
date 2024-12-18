@@ -21,14 +21,14 @@ async def update_games(bot):
             c.execute('DELETE FROM Update_List WHERE game_id = ?', (game_id,))            
             conn.commit()
             await remove_maps(game_id)   
-        else:
+        else: 
             if state == 'FINAL':
                 await cashout(conn, results, game_id, game_type)
             c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
             results = c.fetchall()
             channel_ids = [row[4] for row in results]
             await eventresponse.send_events(game_id, channel_ids, bot)
-            
+    
     c.execute('SELECT * FROM Current_Games')
     games = c.fetchall()
     now = datetime.datetime.now()

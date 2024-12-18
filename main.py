@@ -21,26 +21,138 @@ intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
-class InfoView(discord.ui.View):
-        def __init__(self):
-            super().__init__(timeout=None)
+class HelpView(discord.ui.View):
+    def __init__(self, user_id: int):
+        super().__init__(timeout=None)
+        self.user_id = user_id
+    
+    @discord.ui.button(label='NHL Commands', style=discord.ButtonStyle.primary)
+    async def nhl_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
+        
+        embed = discord.Embed(
+            title='NHL Commands',
+            description='''`$playerstats first_name last_name` Get the career stats for a player
+            `$standings season*` Get the standings for the current season or specified season
+            `$leaders category` Get the player leaders for a specified stat
+            `$roster team season*` Get the team roster for the current seasons or specified season
+            `$playoffinfo` Get the current playoff carousel
+            `$schedule team*` Get todays games or specified a specified team weeks games
+            `$score team` Get the live scoreboard for specified team
+            `$gamestory team date` Get the gamestory for specified team''',
+            color=discord.Color.lighter_gray()
+        )
+        await interaction.response.defer()
+        await interaction.message.edit(embed=embed)
+        
+    @discord.ui.button(label='Economy Commands', style=discord.ButtonStyle.primary)
+    async def economy_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
+        
+        embed = discord.Embed(
+            title='Economy Commands',
+            description='''`$register` Register for the economy
+            `$bonus` Collect your daily bonus
+            `$beg` Earn money
+            `$balance user*` Check your or a specified persons balance
+            `$placebet team wager` Place a bet on a team
+            `$mybets` See your ongoing bets
+            `$removebet team` Remove the bet you placed on a team 
+            `$bethistory` See the outcome of your last 10 bets
+            `$leaderboard` See the servers 10 richest users
             
-        @discord.ui.button(label='Button', style=discord.ButtonStyle.primary)
-        async def button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
-            await interaction.response.send_message('Pressed!')
+            **GAMES**
+            `$slots wager` Spin the slot machine
+            `$coinflip side` Put $10 on a coinflip
+            `$roulette color* color_wager* number* number_wager*` Play roulette
+            `$jackpot wager` Tip the jackpot
+            `$checkjackpot` Check the payout odds of the servers jackpot''',
+            color=discord.Color.lighter_gray()
+        )
+        await interaction.response.defer()
+        await interaction.message.edit(embed=embed)
+        
+    @discord.ui.button(label='Admin Commands', style=discord.ButtonStyle.primary)
+    async def adming_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
+        
+        embed = discord.Embed(
+            title='Admin Commands',
+            description='''`$startgame team -u*` Start a game in the channel running this command. Game events will be sent for goals, penalties, etc... -u will ping anyone who opts in for pings
+            `$wipeuser user` Wipe a user from the economy. This removes all their data
+            `$addmoney user` Give a user money
+            `$takemoney user` Take away money from a user
+            `$reseteconomy confirmation` IRREVERSABLE! Confirmation is the server ID to prevent accidental usage. Deletes all data for the server
+            `$enableroles` Creates team roles for users
+            `$disableroles` Deletes the team roles''',
+            color=discord.Color.lighter_gray()
+        )
+        await interaction.response.defer()
+        await interaction.message.edit(embed=embed)
+        
+    @discord.ui.button(label='Other Info', style=discord.ButtonStyle.primary)
+    async def info_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
+            return
 
-@bot.tree.command(name='info', description='Get command information.')
+        embed = discord.Embed(
+            title=f'Info For Commands',
+            description='''
+            **Betting Payouts** 
+* Preseason Game - 1.25x
+* Regular Season Game - 2x
+* Playoff Game - 3x
+
+**Known Leader Categories**
+* Goalies  
+  - wins  
+  - shutouts  
+  - savePctg 
+* Skaters  
+  - goals  
+  - assists    
+  - points  
+  - plusMinus
+
+**Slots Payouts**
+ * Triple Match
+  - 🍒 - 2x
+  - 🍋 - 4x
+  - 🍊- 8x
+  - 🍎 - 10x
+  - 💎 - $1,000
+  - 💰 - $10,000
+ * Close Wins
+  - w/ 2x 💎 - $100
+  - w/ 2x 💰 - $100
+
+**Roulette Payouts**
+ * Color Match (🔴/⚫) - 2x
+ * Number Match - 10x''',
+            color=discord.Color.lighter_gray()
+        )
+        await interaction.response.defer()
+        await interaction.message.edit(embed=embed)
+
+@bot.tree.command(name='help', description='Get command information.')
 async def info_command(interaction: discord.Interaction):
     try:
-        response = await nhlresponses.get_info()
-        await interaction.response.send_message(content=interaction.user.mention, embed=response, view=InfoView(), ephemeral=True)
+        response = await nhlresponses.get_help()
+        await interaction.response.send_message( embed=response, view=HelpView(user_id=interaction.user.id), delete_after=600)
     except Exception as e:
         await interaction.response.send_message(embed=await return_error('INFO', [None], e))
 
 class NHL(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-            
+    
     #--------------PLAYERSTATS--------------
     #first_name (REQUIRED): Ensure proper spelling and special characters where needed
     #last_name (REQUIRED): Ensure proper spelling and special characters where needed
@@ -117,7 +229,28 @@ class NHL(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='roster Usage',
-                description='$roster **team** **season**[OPT]\nUse three letter abbrev for your team and YYYY-YYYY format for season\n\nExample: ```$roster TBL 2018-2019```',
+                description='$roster **team** **season** [OPT]\nUse three letter abbrev for your team and YYYY-YYYY format for season\n\nExample: ```$roster TBL 2018-2019```',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+            
+    #--------------PROSPECTS--------------
+    #team (REQUIRED): Three letter abbrev for your team
+    
+    @commands.command(name='prospects')
+    async def prospects_command(self, ctx, team: str):
+        try:
+            response = await nhlresponses.get_prospects(team)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('PROSPECTS', [team], e))
+    
+    @roster_command.error
+    async def prospects_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='prospects Usage',
+                description='$prospects **team**\nUse three letter abbrev for your team\n\nExample: ```$prospects VGK```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -151,7 +284,7 @@ class NHL(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='schedule Usage',
-                description='$schedule **team[OPT]**\nLists todays game for the league or weeks game for specified team\n\nExample: ```$schedule CHI```',
+                description='$schedule **team** [OPT]\nLists todays game for the league or weeks game for specified team\n\nExample: ```$schedule CHI```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -263,7 +396,7 @@ class Economy(commands.Cog):
     #--------------BALANCE--------------
     
     @commands.command(name='balance')
-    async def balance_command(self, ctx):
+    async def balance_command(self, ctx, user: str):
         try:
             response = await economyresponses.balance(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
             await ctx.send(content=ctx.author.mention, embed=response)
@@ -406,12 +539,12 @@ class Economy(commands.Cog):
     #--------------ROULETTE-------------
     #Color (OPTIONAL): Red or Black (R or B).
     #Color Wager(OPTIONAL): Wager on your color.
-    #Number(OPTIONAL): 1-36
+    #Number(OPTIONAL): 1-36.
     #Number Wager(OPTIONAL): Wager on your number.
         
     @commands.command(name='roulette')
     @commands.cooldown(1, 5, commands.BucketType.guild)
-    async def roulette_command(self, ctx, category_one: Optional[str], category_one_wager: Optional[float], category_two: Optional[str], category_two_wager: Optional[float]):
+    async def roulette_command(self, ctx, category_one: str, category_one_wager: float, category_two: Optional[str], category_two_wager: Optional[float]):
         try:
             response = await economyresponses.roulette(ctx.author.id, ctx.guild.id, category_one, category_one_wager, category_two, category_two_wager, ctx.author.name, ctx.author.display_avatar.url)
             await ctx.send(embed=response)
@@ -423,7 +556,7 @@ class Economy(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='roulette Usage',
-                description='$roulette **color**[OPT] **color_wager**[OPT] **number**[OPT] **number_wager**[OPT]\nMust wager one at least one category.\n\nExample: ```$roulette Black 100 23 50```',
+                description='$roulette **color** [OPT] **color_wager** [OPT] **number** [OPT] **number_wager** [OPT]\nMust wager one at least one category.\n\nExample: ```$roulette Black 100 23 50```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -437,7 +570,7 @@ class Economy(commands.Cog):
             await ctx.send(embed=embed)
             
     #--------------JACKPOT-------------
-    #Wager: $1-$100. Higher wager == Higher odds
+    #Wager (REQUIRED): $1-$100. Higher wager == Higher odds.
     
     @commands.command(name='jackpot')
     @commands.cooldown(1, 3600, commands.BucketType.guild)
@@ -476,6 +609,29 @@ class Economy(commands.Cog):
         except Exception as e:
             await ctx.send(embed=await return_error('CHECKJACKPOT', [ctx.guild.id], e))
     
+    #--------------HOCKEYPOKER-------------
+    #Opponent (REQUIRED): The person the user wants to challenge.
+    #Team (REQUIRED): Three letter abbrev for their desired team.
+    #Wager (REQUIRED): Initial wager on your team.
+    
+    @commands.command(name='hockeypoker')
+    async def hockeypoker_command(self, ctx, opponent: str, team: str, wager: float):
+        try:
+            response = await economyresponses.hockeypoker(self.bot, ctx.guild.id, ctx.author.id, opponent, team, wager)
+            await ctx.send(embed=response)
+        except Exception as e:
+            await ctx.send(embed=await return_error('HOCKEYPOKER', [ctx.guild.id], e))
+    
+    @hockeypoker_command.error
+    async def hockeypokert_error(self, ctx, error):
+        if isinstance(error, commands.errors.MissingRequiredArgument):
+            embed=discord.Embed(
+                title='hockeypoker Usage',
+                description='$hockeypoker **opponent** **team** **wager**\nPing your desired opponent and select a team to wager.',
+                color=discord.Color.lighter_gray()
+            )
+            await ctx.send(embed=embed)
+    
 class Moderator(commands.Cog):
     #--------------STARTGAME-------------
     #Team (REQUIRED): Three letter abbrev for your team
@@ -485,7 +641,7 @@ class Moderator(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def startgame_command(self, ctx, team: str, update_modifier: Optional[str]):
         try:
-            response = await nhlresponses.startgame(team, ctx.channel.id, ctx.guild.id)
+            response = await nhlresponses.startgame(team, ctx.channel.id, ctx.guild, update_modifier, ctx)
             await ctx.send(embed=response, delete_after=5)
             await ctx.message.delete()
         except Exception as e:
@@ -496,7 +652,7 @@ class Moderator(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='startgame Usage',
-                description='$startgame **team** **-u**[OPT]\nUse three letter abbrev for your team. -u will create a role that will ping with each update as well as pin this message to the channel\n\nExample: ```$startgame BOS```',
+                description='$startgame **team** **-u** [OPT]\nUse three letter abbrev for your team. -u will create a role that will ping with each update as well as pin this message to the channel\n\nExample: ```$startgame BOS```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
