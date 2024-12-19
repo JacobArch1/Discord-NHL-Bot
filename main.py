@@ -158,9 +158,9 @@ class NHL(commands.Cog):
     #last_name (REQUIRED): Ensure proper spelling and special characters where needed
 
     @commands.command(name='playerstats')
-    async def playerstats_command(self, ctx, first_name: str, last_name: str):
+    async def playerstats_command(self, ctx, first_name: str, last_name: str, player_id: Optional[str]):
         try:
-            response = await nhlresponses.get_player_stats(first_name, last_name)
+            response = await nhlresponses.get_player_stats(first_name, last_name, player_id)
             await ctx.send(embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('PLAYERSTATS', [None], e))

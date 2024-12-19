@@ -12,13 +12,30 @@ async def get_help():
     )
     return embed
 
-async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
+async def get_player_stats(first_name: str, last_name: str, player_id: int) -> discord.Embed:
     first_name = first_name.capitalize()
     last_name = last_name.capitalize()
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT id FROM Players WHERE first_name == ? AND last_name == ?', (first_name, last_name,))
-    player = c.fetchone()
+    player = c.fetchall()
+    
+    if len(player) > 1 and player_id == None:
+        embed=discord.Embed(
+            title='Multiple Players Found',
+            description='Run this command again with the ID after the name',
+            color=discord.Color.lighter_gray()
+        )
+        for choice in player:
+            choice_info = nhl.get_specific_player_info(choice[0])
+            team = choice_info.get('currentTeamAbbrev', None)
+            emoji = f'<:{team}:{nhl.team_emojis.get(team)}>' if team else ''
+            embed.add_field(
+                name='',
+                value=f'ID: {choice[0]} Team: {emoji} {team}',
+                inline=False
+            )
+        return embed
     
     if not player:
         close_players = []
@@ -44,7 +61,8 @@ async def get_player_stats(first_name: str, last_name: str) -> discord.Embed:
             )
         return embed
     
-    player_id = player[0]
+    if not player_id:
+        player_id = player[0]
     player_info = nhl.get_specific_player_info(player_id)
     if 'careerTotals' not in player_info:
         embed = discord.Embed(color=discord.Color.lighter_grey())
