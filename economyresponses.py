@@ -869,7 +869,7 @@ def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) ->
         )
         embed.add_field(
             name='', 
-            value='You are not registered in the economy. Use /register to register.', inline=False
+            value='You are not registered in the economy. Use $register to register.', inline=False
         )
         return embed
     elif balance[0] < wager:
