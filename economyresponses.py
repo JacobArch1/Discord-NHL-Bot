@@ -127,10 +127,23 @@ async def beg(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
     
     return embed
 
-async def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
+async def balance(user_id: int, guild_id: int, avatar: str, user: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     
+    title = 'Your Balance'
+    if user:
+        try:
+            user_id, user_name = get_id(conn, guild_id, user)
+            title = f'{user_name}\'s Balance'
+        except ValueError as e:
+            embed = discord.Embed(
+                title='Error',
+                description=str(e),
+                color=discord.Color.lighter_gray()
+            )
+            return embed
+        
     c.execute('SELECT balance FROM User_Economy WHERE guild_id = ? AND user_id = ?', (guild_id, user_id,))
     balance = c.fetchone()
     if balance is None:
@@ -144,12 +157,12 @@ async def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
         )
         embed.add_field(
             name='', 
-            value='You are not registered in the economy. Use /register to register.', 
+            value='You are not registered in the economy. Use $register to register.', 
             inline=False
         )
     else:
         embed = discord.Embed(
-            title='', 
+            title=title, 
             color=discord.Color.green()
         )
         embed.set_author(
@@ -158,7 +171,7 @@ async def balance(user_id: int, guild_id: int, avatar: str) -> discord.Embed:
         )
         embed.add_field(
             name='', 
-            value=f'Your Balance is: ${balance[0]}', 
+            value=f'${balance[0]}', 
             inline=False
         )
 
@@ -500,10 +513,10 @@ async def roulette(user_id: int, guild_id: int, category_one: str, category_one_
         param_error = True
         message = 'Please enter \'Red\' or \'Black\' (R/B) for your color.'
 
-    if number:
+    if number and number != '00':
         try:
             number = int(number)
-            if not (1 <= number <= 36):
+            if not (0 <= number <= 36):
                 param_error = True
                 message = 'Number must be between 1 and 36.'
         except ValueError:
@@ -550,14 +563,19 @@ async def roulette(user_id: int, guild_id: int, category_one: str, category_one_
     
     reds = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
     blacks = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
+    greens = [0, 37]
     
-    ball = random.randint(1, 36)
+    ball = random.randint(0, 37)
     if ball in reds:
         ball_color = 'Red'
         symbol = '🟥'
     if ball in blacks:
         ball_color = 'Black'
         symbol = '⬛'
+    if ball in greens:
+        ball = '00' if ball ==  37 else ball
+        ball_color = 'Green'
+        symbol = '🟩'
     
     payout = 0
     title='Try Again!'
@@ -566,7 +584,7 @@ async def roulette(user_id: int, guild_id: int, category_one: str, category_one_
         title='Congrats!'
         color=discord.Color.green()
         payout += color_wager * 2
-    if number == ball:
+    if (str(number) if number else number) == (str(ball) if ball else ball):
         title='CONGRATS!'
         color=discord.Color.gold()
         payout += color_wager * 10
@@ -702,7 +720,7 @@ async def hockeypoker(bot, guild_id: int, user_id: int, opponent: str, team: str
         return opponent_id
     
     c = conn.cursor()
-    c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (guild_id, opponent_id[0],))
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (guild_id, opponent_id,))
     balance = c.fetchone()
     if balance[0] < wager:
         embed = discord.Embed(
@@ -836,27 +854,22 @@ class ChallengeView(discord.ui.View):
         
         await interaction.response.edit_message(embed=embed, view=None)
 
-def get_id(conn, guild_id: int, user:str) -> int:
+def get_id(conn, guild_id: int, user:str) -> tuple[int, str]:
     c = conn.cursor()
     user_id = None
     
     if '@' in user:
-        user_id = user.replace('<@', '')
-        user_id = user_id.replace('>','')
-        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
-        user_id = c.fetchone()
+        user_id = user.strip('<@!>')
+        c.execute('SELECT user_id, user_name FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
+        user_info = c.fetchone()
     else:
-        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, user,))
-        user_id = c.fetchone()
+        c.execute('SELECT user_id, user_name FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, user,))
+        user_info = c.fetchone()
     
-    if user_id is None:
-        embed = discord.Embed(
-            title='Error',
-            description='User not found or not registered',
-            color=discord.Color.lighter_gray()
-        )
-        return embed
-    return user_id
+    if user_info is None:
+        raise ValueError('User not found or not registered')
+    
+    return user_info[0], user_info[1]
 
 def check_db(conn, user_id: int, guild_id: int, wager: float, min_wager: int) -> bool:
     c = conn.cursor()

@@ -4,56 +4,74 @@ import nhl
 
 async def wipeuser(guild_id: int, user: str) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    user_id = get_id(conn, guild_id, user)
-    if isinstance(user_id, discord.Embed):
-        return user_id
+    try:
+        user_id, user_name = get_id(conn, guild_id, user)
+    except ValueError as e:
+        embed = discord.Embed(
+            title='Error',
+            description=str(e),
+            color=discord.Color.lighter_gray()
+        )
+        return embed
     
     c = conn.cursor()
-    c.execute('DELETE FROM Betting_Pool WHERE guild_id == ? AND user_id == ?', (guild_id, user_id[0],))
+    c.execute('DELETE FROM Betting_Pool WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
     conn.commit()
-    c.execute('DELETE FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id[0],))
+    c.execute('DELETE FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
     conn.commit()
     conn.close()
     
     embed = discord.Embed(
         title='Success',
-        description=f'{user} has been removed from the economy.',
+        description=f'{user_name} has been removed from the economy.',
         color=discord.Color.green()
     )
     return embed
 
 async def addmoney(guild_id: int, user: str, money: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    user_id = get_id(conn, guild_id, user)
-    if isinstance(user_id, discord.Embed):
-        return user_id
+    try:
+        user_id, user_name = get_id(conn, guild_id, user)
+    except ValueError as e:
+        embed = discord.Embed(
+            title='Error',
+            description=str(e),
+            color=discord.Color.lighter_gray()
+        )
+        return embed
     
     c = conn.cursor()
-    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (money, guild_id, user_id[0],))
+    c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (money, guild_id, user_id,))
     conn.commit()
     conn.close()
     
     embed = discord.Embed(
         title='Success',
-        description=f'Gave {user} ${money}.',
+        description=f'Gave {user_name} ${money}.',
         color=discord.Color.green()
     )
     return embed
 
 async def takemoney(guild_id: int, user: str, money: float) -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
-    user_id = get_id(conn, guild_id, user)
-    if isinstance(user_id, discord.Embed):
-        return user_id
+    try:
+        user_id, user_name = get_id(conn, guild_id, user)
+    except ValueError as e:
+        embed = discord.Embed(
+            title='Error',
+            description=str(e),
+            color=discord.Color.lighter_gray()
+        )
+        return embed
     
     c = conn.cursor()
-    c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (money, guild_id, user_id[0],))
+    c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (money, guild_id, user_id,))
     conn.commit()
     conn.close()
     
     embed = discord.Embed(
         title='Success',
-        description=f'Removed ${money} from {user}.',
+        description=f'Removed ${money} from {user_name}.',
         color=discord.Color.green()
     )
     return embed
@@ -148,24 +166,19 @@ async def disableroles(guild: discord.Guild) -> discord.Embed:
         )
     return embed
 
-def get_id(conn, guild_id: int, user:str) -> int:
+def get_id(conn, guild_id: int, user:str) -> tuple[int, str]:
     c = conn.cursor()
     user_id = None
     
     if '@' in user:
-        user_id = user.replace('<@', '')
-        user_id = user_id.replace('>','')
-        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
-        user_id = c.fetchone()
+        user_id = user.strip('<@!>')
+        c.execute('SELECT user_id, user_name FROM User_Economy WHERE guild_id == ? AND user_id == ?', (guild_id, user_id,))
+        user_info = c.fetchone()
     else:
-        c.execute('SELECT user_id FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, user,))
-        user_id = c.fetchone()
+        c.execute('SELECT user_id, user_name FROM User_Economy WHERE guild_id == ? AND user_name == ?', (guild_id, user,))
+        user_info = c.fetchone()
     
-    if user_id is None:
-        embed = discord.Embed(
-            title='Error',
-            description='User not found or not registered',
-            color=discord.Color.lighter_gray()
-        )
-        return embed
-    return user_id
+    if user_info is None:
+        raise ValueError('User not found or not registered')
+    
+    return user_info[0], user_info[1]

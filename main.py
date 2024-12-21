@@ -147,7 +147,7 @@ async def info_command(interaction: discord.Interaction):
         response = await nhlresponses.get_help()
         await interaction.response.send_message( embed=response, view=HelpView(user_id=interaction.user.id), delete_after=600)
     except Exception as e:
-        await interaction.response.send_message(embed=await return_error('INFO', [None], e))
+        await interaction.response.send_message(embed=await return_error('HELP', [None], e))
 
 class NHL(commands.Cog):
     def __init__(self, bot):
@@ -332,10 +332,24 @@ class NHL(commands.Cog):
             )
             await ctx.send(embed=embed)
 
+class Cooldown(commands.CooldownMapping):
+    def __init__(self, rate, per):
+        cooldown = commands.Cooldown(rate, per)
+        super().__init__(cooldown, commands.BucketType.user)
+
+    def _bucket_key(self, ctx):
+        return (ctx.guild.id, ctx.author.id)
+
 class Economy(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns = {}
+        self.bonus_cooldown = Cooldown(1, 86400)
+        self.beg_cooldown = Cooldown(1, 600)
+        self.slots_cooldown = Cooldown(1, 5)
+        self.coinflip_cooldown = Cooldown(1, 5)
+        self.roulette_cooldown = Cooldown(1, 5)
+        self.jackpot_cooldown = Cooldown(1, 3600)
         
     #--------------REGISTER--------------
 
@@ -351,54 +365,42 @@ class Economy(commands.Cog):
     #COOLDOWN: 24 Hours
     
     @commands.command(name='bonus')
-    @commands.cooldown(1, 86400, commands.BucketType.guild)
     async def bonus_command(self, ctx):
+        bucket = self.bonus_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.bonus(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
             await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('BONUS', [ctx.author.id, ctx.guild.id], e))
-    
-    @bonus_command.error
-    async def bonus_error(self, ctx, error):
-        if isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Bonus was already claimed.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
-            )
-            await ctx.send(embed=embed)
             
     #--------------BEG--------------
     #COOLDOWN: 10 Minutes
     
     @commands.command(name='beg')
-    @commands.cooldown(1, 600, commands.BucketType.guild)
     async def beg_command(self, ctx):
+        bucket = self.beg_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.beg(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
             await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('BEG', [ctx.author.id, ctx.guild.id], e))
-    
-    @beg_command.error
-    async def beg_error(self, ctx, error):
-        if isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Beg Cooldown.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
-            )
-            await ctx.send(embed=embed)
             
     #--------------BALANCE--------------
     
     @commands.command(name='balance')
-    async def balance_command(self, ctx, user: str):
+    async def balance_command(self, ctx, user: Optional[str]):
         try:
-            response = await economyresponses.balance(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
+            response = await economyresponses.balance(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url, user)
             await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('BALANCE', [ctx.author.id , ctx.guild.id], e))
@@ -480,8 +482,13 @@ class Economy(commands.Cog):
     #Wager (REQUIRED): Number to wager $1, $2, $5, $50, $100.
     
     @commands.command(name='slots')
-    @commands.cooldown(1, 5, commands.BucketType.guild)
     async def slots_command(self, ctx, wager: float):
+        bucket = self.slots_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.slots(ctx.author.id, ctx.guild.id, wager, ctx.author.name, ctx.author.display_avatar.url)
             await ctx.send(embed=response)
@@ -497,21 +504,18 @@ class Economy(commands.Cog):
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
-        elif isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Slots Cooldown.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
-            )
-            await ctx.send(embed=embed)
 
     #--------------COINFLIP-------------
     #Side (REQUIRED): Heads or Tails (H or T).
     
     @commands.command(name='coinflip')
-    @commands.cooldown(1, 5, commands.BucketType.guild)
     async def coinflip_command(self, ctx, side: str):
+        bucket = self.coinflip_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.coinflip(ctx.author.id, ctx.guild.id, side, ctx.author.name, ctx.author.display_avatar.url)
             await ctx.send(embed=response)
@@ -527,14 +531,6 @@ class Economy(commands.Cog):
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
-        elif isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Coinflip Cooldown.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
-            )
-            await ctx.send(embed=embed)
     
     #--------------ROULETTE-------------
     #Color (OPTIONAL): Red or Black (R or B).
@@ -543,8 +539,13 @@ class Economy(commands.Cog):
     #Number Wager(OPTIONAL): Wager on your number.
         
     @commands.command(name='roulette')
-    @commands.cooldown(1, 5, commands.BucketType.guild)
     async def roulette_command(self, ctx, category_one: str, category_one_wager: float, category_two: Optional[str], category_two_wager: Optional[float]):
+        bucket = self.roulette_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.roulette(ctx.author.id, ctx.guild.id, category_one, category_one_wager, category_two, category_two_wager, ctx.author.name, ctx.author.display_avatar.url)
             await ctx.send(embed=response)
@@ -560,21 +561,18 @@ class Economy(commands.Cog):
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
-        elif isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Roulette Cooldown.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
-            )
-            await ctx.send(embed=embed)
             
     #--------------JACKPOT-------------
     #Wager (REQUIRED): $1-$100. Higher wager == Higher odds.
     
     @commands.command(name='jackpot')
-    @commands.cooldown(1, 3600, commands.BucketType.guild)
     async def jackpot_command(self, ctx, amount: int):
+        bucket = self.jackpot_cooldown.get_bucket(ctx)
+        retry_after = bucket.update_rate_limit()
+        
+        if retry_after:
+            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
+        
         try:
             response = await economyresponses.jackpot(ctx.guild.id, ctx.author.id, amount, ctx.author.name, ctx.author.display_avatar.url)
             await ctx.send(embed=response)
@@ -586,16 +584,8 @@ class Economy(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='jackpot Usage',
-                description='$coinflip **wager**\nHigher wager means better odds at spilling the pot.\n\nExample: ```$jackpot 100```',
+                description='$jackpot **wager**\nHigher wager means better odds at spilling the pot.\n\nExample: ```$jackpot 100```',
                 color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-        elif isinstance(error, commands.errors.CommandOnCooldown):
-            remaining_time = await cooldown_time(error.retry_after)
-            embed = discord.Embed(
-                title='Jackpot Cooldown.', 
-                description=f'Please wait {remaining_time}', 
-                color=discord.Color(0xFFFFFF)
             )
             await ctx.send(embed=embed)
     
@@ -810,17 +800,6 @@ async def return_error(command: str, parameters: list[str], e: str) -> discord.E
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
     embed.add_field(name='', value=f'This is 90% a code error', inline=False)
     return embed
-
-async def cooldown_time(cooldown: float) -> float:
-    if cooldown > 3600:
-        cooldown = round(cooldown / 3600, 1)
-        unit = 'hours'
-    elif cooldown > 60:
-        cooldown = round(cooldown / 60, 1)
-        unit = 'minutes'
-    else:
-        unit = 'seconds'
-    return (f'{round(cooldown, 2)} {unit}')
 
 async def setup(bot):
     if 'NHL' not in bot.cogs:
