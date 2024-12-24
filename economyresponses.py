@@ -583,11 +583,11 @@ async def roulette(user_id: int, guild_id: int, category_one: str, category_one_
     if color_guess == ball_color:
         title='Congrats!'
         color=discord.Color.green()
-        payout += color_wager * 2
+        payout += (color_wager or 0) * 2
     if (str(number) if number else number) == (str(ball) if ball else ball):
         title='CONGRATS!'
         color=discord.Color.gold()
-        payout += color_wager * 10
+        payout += (number_wager or 0) * 10
     
     c = conn.cursor()
     c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (round(payout,2), guild_id, user_id))
