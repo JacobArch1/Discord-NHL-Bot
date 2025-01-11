@@ -720,7 +720,7 @@ async def hockeypoker(bot, guild_id: int, user_id: int, opponent: str, team: str
         return opponent_id
     
     c = conn.cursor()
-    c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (guild_id, opponent_id,))
+    c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (guild_id, opponent_id[0],))
     balance = c.fetchone()
     if balance[0] < wager:
         embed = discord.Embed(
@@ -790,21 +790,35 @@ async def hockeypoker(bot, guild_id: int, user_id: int, opponent: str, team: str
     return embed
 
 class ChallengeView(discord.ui.View):
-    def __init__(self, user_id: int, guild_id: int, wager: int):
+    def __init__(self, opponent_id: int, guild_id: int, wager: int, bot):
         super().__init__(timeout=None)
-        self.user_id = user_id
+        self.opponent_id = opponent_id
         self.guild_id = guild_id
         self.wager = wager
+        self.bot = bot
     
     @discord.ui.button(label='Accept', style=discord.ButtonStyle.success)
     async def accept_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user_id:
+        if interaction.user.id != self.opponent_id:
             await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
             return
         
+        embed = discord.Embed(
+            title='Challenge Accepted!',
+            description='Bot will DM you when the game starts',
+            color=discord.Color.gold()
+        )
+        
+        opponent = await self.bot.fetch_user(self.opponent_id)
+        accepted_msg = discord.Embed(
+            title='Challenge Declined',
+            description=f'{opponent.name} Accepted your challenge.\nBot will DM you when the game starts',
+            color=discord.Color.red()
+        )
+        
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
-        c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (self.guild_id, self.user_id,))
+        c.execute('SELECT balance FROM User_Economy WHERE guild_id == ? and user_id == ?', (self.guild_id, self.opponent_id,))
         balance = c.fetchone()
         if balance[0] < self.wager:
             embed = discord.Embed(
@@ -814,23 +828,24 @@ class ChallengeView(discord.ui.View):
             )
             return embed
         
-        embed = discord.Embed(
-            title='Challenge Accepted!',
-            description='Bot will DM you when the game starts',
-            color=discord.Color.gold()
-        )
         
-        c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (self.wager, self.guild_id, self.user_id,))
+        c.execute('SELECT * FROM Poker_Pool WHERE opponent_id = ?', (self.opponent_id,))
+        match_data = c.fetchone()
+        user_id = match_data[4]
+        user = await self.bot.fetch_user(user_id)
+        
+        c.execute('UPDATE User_Economy SET balance = balance - ? WHERE guild_id = ? AND user_id = ?', (self.wager, self.guild_id, self.opponent_id,))
         conn.commit()
-        c.execute('UPDATE Poker_Pool SET opponent_accepted = 1 WHERE opponent_id = ?', (self.user_id,))
+        c.execute('UPDATE Poker_Pool SET opponent_accepted = 1 WHERE opponent_id = ?', (self.opponent_id,))
         conn.commit()
         conn.close()
     
+        await user.send(embed=accepted_msg)
         await interaction.response.edit_message(embed=embed, view=None)
         
     @discord.ui.button(label='Decline', style=discord.ButtonStyle.danger)
     async def decline_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user_id:
+        if interaction.user.id != self.opponent_id:
             await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
             return
         
@@ -840,18 +855,27 @@ class ChallengeView(discord.ui.View):
             color=discord.Color.red()
         )
         
+        opponent = await self.bot.fetch_user(self.opponent_id)
+        declined_msg = discord.Embed(
+            title='Challenge Declined',
+            description=f'{opponent.name} Declined your challenge.',
+            color=discord.Color.red()
+        )
+        
         conn = sqlite3.connect('./databases/main.db')
         c = conn.cursor()
-        c.execute('SELECT * FROM Poker_Pool WHERE opponent_id = ?', (self.user_id,))
+        c.execute('SELECT * FROM Poker_Pool WHERE opponent_id = ?', (self.opponent_id,))
         match_data = c.fetchone()
-        opponent_wager = match_data[8]
-        opponent_id = match_data[4]
+        user_wager = match_data[8]
+        user_id = match_data[4]
         
-        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (opponent_wager, self.guild_id, opponent_id,))
-        c.execute('DELETE FROM Poker_Pool WHERE opponent_id = ?', (self.user_id,))
+        c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (user_wager, self.guild_id, user_id,))
+        c.execute('DELETE FROM Poker_Pool WHERE opponent_id = ?', (self.opponent_id,))
         conn.commit()
         conn.close()
         
+        user = await self.bot.fetch_user(user_id)
+        await user.send(embed=declined_msg)
         await interaction.response.edit_message(embed=embed, view=None)
 
 def get_id(conn, guild_id: int, user:str) -> tuple[int, str]:
