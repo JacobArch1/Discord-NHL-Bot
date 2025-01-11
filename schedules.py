@@ -2,6 +2,7 @@ import nhl
 import datetime
 import sqlite3
 import eventresponse
+import discord
 import os
 
 async def update_games(bot):
@@ -20,10 +21,11 @@ async def update_games(bot):
             conn.commit()
             c.execute('DELETE FROM Update_List WHERE game_id = ?', (game_id,))            
             conn.commit()
-            await remove_maps(game_id)   
+            await remove_maps(game_id)
         else: 
             if state == 'FINAL':
                 await cashout(conn, results, game_id, game_type)
+                await end_poker_games(conn, results, game_id, bot)
             c.execute('SELECT * FROM Update_List WHERE game_id = ?', (game_id,))
             results = c.fetchall()
             channel_ids = [row[4] for row in results]
@@ -70,6 +72,59 @@ async def cashout(conn, results: dict, game_id: int, game_type: int):
         c.execute('INSERT INTO Bet_History (game_id, game_type, user_id, guild_id, team, wager, payout) VALUES (?, ?, ?, ?, ?, ?, ?)', (game_id, game_type, user_id, guild_id, team, wager, payout,))
         c.execute('DELETE FROM Betting_Pool WHERE id = ?', (bet_id,))
         conn.commit()
+        
+async def end_poker_games(conn, results: dict, game_id: int, bot):
+    c = conn.cursor()
+    c.execute('SELECT * FROM Poker_Pool WHERE game_id == ?', (game_id,))
+    games = c.fetchall()
+    
+    home_team = results['homeTeam']['abbrev']
+    home_score = results['homeTeam']['score']
+    away_team = results['awayTeam']['abbrev']
+    away_score = results['awayTeam']['score']
+
+    if home_score > away_score:
+        winning_team = home_team
+    else:
+        winning_team = away_team
+        
+    for game in games:
+        poker_game_id = game[0]
+        guild_id = game[2]
+        user_id = game[4]
+        opponent_id = game[5]
+        user_team = game[6]
+        opponent_pot = game[7]
+        user_pot = game[8]
+        opponent_pot = game[9]
+        full_pot = opponent_pot + user_pot
+        
+        winning_msg = discord.Embed(
+            title='Poker Game Ended.',
+            description=f'You Won: {full_pot} 💵\n\n**Game Result:**\n<:{home_team}:{nhl.team_emojis.get(home_team)}> {home_team}: {home_score}\n<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team}: {away_score}',
+            color=discord.Color.green(),
+        )
+        
+        losing_msg = discord.Embed(
+            title='Poker Game Ended.',
+            description=f'You Lost\n\n**Game Result:**\n<:{home_team}:{nhl.team_emojis.get(home_team)}> {home_team}: {home_score}\n<:{away_team}:{nhl.team_emojis.get(away_team)}> {away_team}: {away_score}',
+            color=discord.Color.red(),
+        )
+        
+        opponent_user = await bot.fetch_user(opponent_id)
+        user = await bot.fetch_user(user_id)
+        
+        if user_team == winning_team:
+            await user.send(embed=winning_msg)
+            await opponent_user.send(embed=losing_msg)
+            c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (full_pot, guild_id, user_id,))
+        else:
+            await user.send(embed=losing_msg)
+            await opponent_user.send(embed=winning_msg)
+            c.execute('UPDATE User_Economy SET balance = balance + ? WHERE guild_id = ? AND user_id = ?', (full_pot, guild_id, opponent_id,))
+        
+        c.execute('DELETE FROM Poker_Pool WHERE id = ?', (poker_game_id,))
+        conn.commit()
 
 async def remove_maps(game_id):
     map_path = './images/Maps'
@@ -105,10 +160,6 @@ async def get_todays_games(conn):
                 (game_id, game_type, away_team, home_team, est_date, est_time)
             )
             conn.commit()
-    if games_today is None:
-        nhl.log_data(f'No games today, Database cleared')
-    else:
-        nhl.log_data(f'Games for {est_date} have been added to the database')
 
 async def fetch_players(season: int):
     conn = sqlite3.connect('./databases/main.db')
