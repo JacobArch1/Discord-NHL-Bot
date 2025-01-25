@@ -785,7 +785,11 @@ class Scheduled(commands.Cog):
     async def update_tables(self):
         while True:
             now = datetime.datetime.now()
-            season = int(str(now.year) + str(now.year+1))
+            season = 0
+            if now.month < 5:
+                season = int(str(now.year-1) + str(now.year))
+            else:
+                season = int(str(now.year) + str(now.year+1))
             await schedules.fetch_players(season)
             await schedules.fetch_standings()
             await asyncio.sleep(86400)

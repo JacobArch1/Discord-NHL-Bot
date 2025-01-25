@@ -63,7 +63,7 @@ async def get_player_stats(first_name: str, last_name: str, player_id: int) -> d
     
     if not player_id:
         player_id = player[0]
-    player_info = nhl.get_specific_player_info(player_id)
+    player_info = nhl.get_specific_player_info(player_id[0])
     if 'careerTotals' not in player_info:
         embed = discord.Embed(color=discord.Color.lighter_grey())
         embed.add_field(
