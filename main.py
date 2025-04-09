@@ -599,29 +599,6 @@ class Economy(commands.Cog):
         except Exception as e:
             await ctx.send(embed=await return_error('CHECKJACKPOT', [ctx.guild.id], e))
     
-    #--------------HOCKEYPOKER-------------
-    #Opponent (REQUIRED): The person the user wants to challenge.
-    #Team (REQUIRED): Three letter abbrev for their desired team.
-    #Wager (REQUIRED): Initial wager on your team.
-    
-    @commands.command(name='hockeypoker')
-    async def hockeypoker_command(self, ctx, opponent: str, team: str, wager: float):
-        try:
-            response = await economyresponses.hockeypoker(self.bot, ctx.guild.id, ctx.author.id, opponent, team, wager)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('HOCKEYPOKER', [ctx.guild.id], e))
-    
-    @hockeypoker_command.error
-    async def hockeypokert_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed=discord.Embed(
-                title='hockeypoker Usage',
-                description='$hockeypoker **opponent** **team** **wager**\nPing your desired opponent and select a team to wager.',
-                color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-    
 class Moderator(commands.Cog):
     #--------------STARTGAME-------------
     #Team (REQUIRED): Three letter abbrev for your team
