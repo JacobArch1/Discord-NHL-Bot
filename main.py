@@ -2,13 +2,12 @@ import datetime
 import os
 import sqlite3
 import discord
-import asyncio
 import nhl
 import nhlresponses
 import economyresponses
 import modresponses
 import schedules
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from typing import Final, Optional
 
@@ -38,6 +37,7 @@ class HelpView(discord.ui.View):
             `$standings season*` Get the standings for the current season or specified season
             `$leaders category` Get the player leaders for a specified stat
             `$roster team season*` Get the team roster for the current seasons or specified season
+            `$prospects team` Get the current prospect roster for the specified team
             `$playoffs` Get the current playoff carousel
             `$schedule team*` Get todays games or specified a specified team weeks games
             `$score team` Get the live scoreboard for specified team
@@ -560,25 +560,36 @@ class Moderator(commands.Cog):
 class Scheduled(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.update_games())
-        self.bot.loop.create_task(self.update_tables())
+        self.update_tables.start()
+        self.update_games.start()
+        
+    def cog_unload(self):
+        self.update_tables.cancel()
+        self.update_games.cancel()
 
+    @tasks.loop(hours=24)
     async def update_tables(self):
-        while True:
-            now = datetime.datetime.now()
-            season = 0
-            if now.month < 7:
-                season = int(str(now.year-1) + str(now.year))
-            else:
-                season = int(str(now.year) + str(now.year+1))
-            await schedules.fetch_players(season)
-            await schedules.fetch_standings()
-            await asyncio.sleep(86400)
+        now = datetime.datetime.now()
+        season = 0
+        if now.month < 7:
+            season = int(str(now.year-1) + str(now.year))
+        else:
+            season = int(str(now.year) + str(now.year+1))
+        await schedules.fetch_players(season)
+        await schedules.fetch_standings()
 
+    @update_tables.before_loop
+    async def before_update_tables(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(seconds=10)
     async def update_games(self):
-        while True:
-            await schedules.update_games(self.bot)
-            await asyncio.sleep(5)
+        await schedules.update_games(self.bot)
+        
+    @update_games.before_loop
+    async def before_update_games(self):
+        await self.bot.wait_until_ready()
+
 
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')
