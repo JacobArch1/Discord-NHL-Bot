@@ -38,10 +38,10 @@ class HelpView(discord.ui.View):
             `$standings season*` Get the standings for the current season or specified season
             `$leaders category` Get the player leaders for a specified stat
             `$roster team season*` Get the team roster for the current seasons or specified season
-            `$playoffinfo` Get the current playoff carousel
+            `$playoffs` Get the current playoff carousel
             `$schedule team*` Get todays games or specified a specified team weeks games
             `$score team` Get the live scoreboard for specified team
-            `$gamestory team date` Get the gamestory for specified team''',
+            `$gamestory team date` Get the gamestory for specified team (YYYY-DD-MM)''',
             color=discord.Color.lighter_gray()
         )
         await interaction.response.defer()
@@ -57,20 +57,12 @@ class HelpView(discord.ui.View):
             title='Economy Commands',
             description='''`$register` Register for the economy
             `$bonus` Collect your daily bonus
-            `$beg` Earn money
             `$balance user*` Check your or a specified persons balance
             `$placebet team wager` Place a bet on a team
             `$mybets` See your ongoing bets
             `$removebet team` Remove the bet you placed on a team 
             `$bethistory` See the outcome of your last 10 bets
-            `$leaderboard` See the servers 10 richest users
-            
-            **GAMES**
-            `$slots wager` Spin the slot machine
-            `$coinflip side` Put $10 on a coinflip
-            `$roulette color* color_wager* number* number_wager*` Play roulette
-            `$jackpot wager` Tip the jackpot
-            `$checkjackpot` Check the payout odds of the servers jackpot''',
+            `$leaderboard` See the servers 10 richest users''',
             color=discord.Color.lighter_gray()
         )
         await interaction.response.defer()
@@ -91,51 +83,6 @@ class HelpView(discord.ui.View):
             `$reseteconomy confirmation` IRREVERSABLE! Confirmation is the server ID to prevent accidental usage. Deletes all data for the server
             `$enableroles` Creates team roles for users
             `$disableroles` Deletes the team roles''',
-            color=discord.Color.lighter_gray()
-        )
-        await interaction.response.defer()
-        await interaction.message.edit(embed=embed)
-        
-    @discord.ui.button(label='Other Info', style=discord.ButtonStyle.primary)
-    async def info_button_pressed(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message('You\'re not allowed to interact with this message.', ephemeral=True, delete_after=3)
-            return
-
-        embed = discord.Embed(
-            title=f'Info For Commands',
-            description='''
-            **Betting Payouts** 
-* Preseason Game - 1.25x
-* Regular Season Game - 2x
-* Playoff Game - 3x
-
-**Known Leader Categories**
-* Goalies  
-  - wins  
-  - shutouts  
-  - savePctg 
-* Skaters  
-  - goals  
-  - assists    
-  - points  
-  - plusMinus
-
-**Slots Payouts**
- * Triple Match
-  - 🍒 - 2x
-  - 🍋 - 4x
-  - 🍊- 8x
-  - 🍎 - 10x
-  - 💎 - $1,000
-  - 💰 - $10,000
- * Close Wins
-  - w/ 2x 💎 - $100
-  - w/ 2x 💰 - $100
-
-**Roulette Payouts**
- * Color Match (🔴/⚫) - 2x
- * Number Match - 10x''',
             color=discord.Color.lighter_gray()
         )
         await interaction.response.defer()
@@ -207,7 +154,7 @@ class NHL(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='leaders Usage',
-                description='$leaders **category**\nUse /info for a list of known categories.\n\nExample: ```$leaders goals```',
+                description='$leaders **category**\n\nCategories:\nGoalies(wins, shutouts, savePctg)\nSkaters(goals, assists, points, plusMinus)"\n\nExample: ```$leaders goals```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -255,17 +202,17 @@ class NHL(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    #--------------PLAYOFFINFO--------------
+    #--------------PLAYOFFS--------------
     
-    @commands.command(name='playoffinfo')
-    async def playoffinfo_command(self, ctx):
+    @commands.command(name='playoffs')
+    async def playoffs_command(self, ctx):
         try:
-            response = await nhlresponses.get_playoff_bracket()
+            response = await nhlresponses.get_playoffs()
             await ctx.send(embed=response)
         except Exception as e:
-            await ctx.send(embed=await return_error('PLAYOFFINFO', [None], e))
+            await ctx.send(embed=await return_error('PLAYOFFS', [None], e))
 
-    #--------------PLAYOFFINFO--------------
+    #--------------SCHEDULE--------------
     #team (OPTIONAL): Three letter abbrev for your team
     
     @commands.command(name='schedule')
@@ -345,11 +292,6 @@ class Economy(commands.Cog):
         self.bot = bot
         self.cooldowns = {}
         self.bonus_cooldown = Cooldown(1, 86400)
-        self.beg_cooldown = Cooldown(1, 600)
-        self.slots_cooldown = Cooldown(1, 5)
-        self.coinflip_cooldown = Cooldown(1, 5)
-        self.roulette_cooldown = Cooldown(1, 5)
-        self.jackpot_cooldown = Cooldown(1, 3600)
         
     #--------------REGISTER--------------
 
@@ -377,23 +319,6 @@ class Economy(commands.Cog):
             await ctx.send(content=ctx.author.mention, embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('BONUS', [ctx.author.id, ctx.guild.id], e))
-            
-    #--------------BEG--------------
-    #COOLDOWN: 10 Minutes
-    
-    @commands.command(name='beg')
-    async def beg_command(self, ctx):
-        bucket = self.beg_cooldown.get_bucket(ctx)
-        retry_after = bucket.update_rate_limit()
-        
-        if retry_after:
-            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
-        
-        try:
-            response = await economyresponses.beg(ctx.author.id, ctx.guild.id, ctx.author.display_avatar.url)
-            await ctx.send(content=ctx.author.mention, embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('BEG', [ctx.author.id, ctx.guild.id], e))
             
     #--------------BALANCE--------------
     
@@ -477,127 +402,6 @@ class Economy(commands.Cog):
             await ctx.send(embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('LEADERBOARD', [ctx.guild.id], e))
-    
-    #--------------SLOTS-------------
-    #Wager (REQUIRED): Number to wager $1, $2, $5, $50, $100.
-    
-    @commands.command(name='slots')
-    async def slots_command(self, ctx, wager: float):
-        bucket = self.slots_cooldown.get_bucket(ctx)
-        retry_after = bucket.update_rate_limit()
-        
-        if retry_after:
-            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
-        
-        try:
-            response = await economyresponses.slots(ctx.author.id, ctx.guild.id, wager, ctx.author.name, ctx.author.display_avatar.url)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('SLOTS', [wager, ctx.guild.id], e))
-        
-    @slots_command.error
-    async def slots_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed=discord.Embed(
-                title='slots Usage',
-                description='$slots **wager**\nMachine accepts $1, $5, $10, $100.\n\nExample: ```$slots 10```',
-                color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-
-    #--------------COINFLIP-------------
-    #Side (REQUIRED): Heads or Tails (H or T).
-    
-    @commands.command(name='coinflip')
-    async def coinflip_command(self, ctx, side: str):
-        bucket = self.coinflip_cooldown.get_bucket(ctx)
-        retry_after = bucket.update_rate_limit()
-        
-        if retry_after:
-            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
-        
-        try:
-            response = await economyresponses.coinflip(ctx.author.id, ctx.guild.id, side, ctx.author.name, ctx.author.display_avatar.url)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('COINFLIP', [side, ctx.guild.id], e))
-    
-    @coinflip_command.error
-    async def coinflip_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed=discord.Embed(
-                title='coinflip Usage',
-                description='$coinflip **side**\nWagers $10, Pick Heads or Tails (H or T).\n\nExample: ```$coinflip Heads```',
-                color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-    
-    #--------------ROULETTE-------------
-    #Color (OPTIONAL): Red or Black (R or B).
-    #Color Wager(OPTIONAL): Wager on your color.
-    #Number(OPTIONAL): 1-36.
-    #Number Wager(OPTIONAL): Wager on your number.
-        
-    @commands.command(name='roulette')
-    async def roulette_command(self, ctx, category_one: str, category_one_wager: float, category_two: Optional[str], category_two_wager: Optional[float]):
-        bucket = self.roulette_cooldown.get_bucket(ctx)
-        retry_after = bucket.update_rate_limit()
-        
-        if retry_after:
-            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
-        
-        try:
-            response = await economyresponses.roulette(ctx.author.id, ctx.guild.id, category_one, category_one_wager, category_two, category_two_wager, ctx.author.name, ctx.author.display_avatar.url)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('ROULETTE', [category_one, category_one_wager, category_two, category_two_wager, ctx.guild.id], e))
-    
-    @roulette_command.error
-    async def roulette_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed=discord.Embed(
-                title='roulette Usage',
-                description='$roulette **color** [OPT] **color_wager** [OPT] **number** [OPT] **number_wager** [OPT]\nMust wager one at least one category.\n\nExample: ```$roulette Black 100 23 50```',
-                color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-            
-    #--------------JACKPOT-------------
-    #Wager (REQUIRED): $1-$100. Higher wager == Higher odds.
-    
-    @commands.command(name='jackpot')
-    async def jackpot_command(self, ctx, amount: int):
-        bucket = self.jackpot_cooldown.get_bucket(ctx)
-        retry_after = bucket.update_rate_limit()
-        
-        if retry_after:
-            return await ctx.send(f'You\'re on cooldown. Try again in {retry_after:.2f} seconds.')
-        
-        try:
-            response = await economyresponses.jackpot(ctx.guild.id, ctx.author.id, amount, ctx.author.name, ctx.author.display_avatar.url)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('JACKPOT', [ctx.guild.id, amount], e))
-            
-    @jackpot_command.error
-    async def jackpot_error(self, ctx, error):
-        if isinstance(error, commands.errors.MissingRequiredArgument):
-            embed=discord.Embed(
-                title='jackpot Usage',
-                description='$jackpot **wager**\nHigher wager means better odds at spilling the pot.\n\nExample: ```$jackpot 100```',
-                color=discord.Color.lighter_gray()
-            )
-            await ctx.send(embed=embed)
-    
-    #--------------CHECKJACKPOT-------------
-    
-    @commands.command(name='checkjackpot')
-    async def checkjackpot(self, ctx):
-        try:
-            response = await economyresponses.checkjackpot(ctx.guild.name, ctx.guild.id)
-            await ctx.send(embed=response)
-        except Exception as e:
-            await ctx.send(embed=await return_error('CHECKJACKPOT', [ctx.guild.id], e))
     
 class Moderator(commands.Cog):
     #--------------STARTGAME-------------
@@ -763,7 +567,7 @@ class Scheduled(commands.Cog):
         while True:
             now = datetime.datetime.now()
             season = 0
-            if now.month < 5:
+            if now.month < 7:
                 season = int(str(now.year-1) + str(now.year))
             else:
                 season = int(str(now.year) + str(now.year+1))
@@ -779,7 +583,7 @@ class Scheduled(commands.Cog):
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
-    embed.add_field(name='', value=f'This is 90% a code error', inline=False)
+    embed.add_field(name='', value=f'This is likely a code error\nCheck parameters and try again', inline=False)
     return embed
 
 async def setup(bot):

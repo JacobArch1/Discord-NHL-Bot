@@ -13,8 +13,6 @@ async def get_help():
     return embed
 
 async def get_player_stats(first_name: str, last_name: str, player_id: int) -> discord.Embed:
-    first_name = first_name.capitalize()
-    last_name = last_name.capitalize()
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT id FROM Players WHERE first_name == ? AND last_name == ?', (first_name, last_name,))
@@ -44,7 +42,7 @@ async def get_player_stats(first_name: str, last_name: str, player_id: int) -> d
         close_players = c.fetchall()
         embed.add_field(
             name='', 
-            value='Player Not Found', 
+            value='Player Not Found. Check capitilization', 
             inline=False
         )
         if close_players:
@@ -385,13 +383,13 @@ async def get_prospects(team: str) -> discord.Embed:
 
     return embed
 
-async def get_playoff_bracket() -> discord.Embed:
+async def get_playoffs() -> discord.Embed:
     conn = sqlite3.connect('./databases/main.db')
     c = conn.cursor()
     c.execute('SELECT * FROM Standings ORDER BY rowid DESC LIMIT 1')
     season = c.fetchone()
     c.close()
-    brackets = nhl.get_playoff_carousel(season[2])
+    brackets = nhl.get_playoff_carousel(season[0])
     if 'rounds' not in brackets:
         embed = discord.Embed(color=discord.Color.lighter_gray())
         embed.add_field(

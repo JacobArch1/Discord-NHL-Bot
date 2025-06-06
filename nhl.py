@@ -35,7 +35,7 @@ teams = {'ANA' : 'Anaheim Ducks',
          'VGK' : 'Vegas Golden Knights', 
          'WPG' : 'Winnipeg Jets', 
          'WSH' : 'Washington Capitals',
-         'UTA' : 'Utah Hockey Club'}
+         'UTA' : 'Utah Mammoth'}
 
 teams_colors = {'ANA': '#F47A38', 
                 'ARI': '#8C2633', 
@@ -48,8 +48,8 @@ teams_colors = {'ANA': '#F47A38',
                 'COL': '#6F263D', 
                 'DAL': '#006847', 
                 'DET': '#ce1126', 
-                'EDM': '#041E42', 
-                'FLA': '#041E42', 
+                'EDM': '#FF4C00', 
+                'FLA': '#c8102E', 
                 'LAK': '#111111', 
                 'MIN': '#A6192E', 
                 'MTL': '#AF1E2D', 
@@ -65,11 +65,11 @@ teams_colors = {'ANA': '#F47A38',
                 'STL': '#002F87', 
                 'TBL': '#002868', 
                 'TOR': '#00205b',
-                'VAN': '#00205B', 
+                'UTA': '#71AFE5',
+                'VAN': '#041C2C', 
                 'VGK': '#B4975A', 
                 'WPG': '#041E42', 
-                'WSH': '#041E42',
-                'UTA': '#71AFE5'}
+                'WSH': '#C8102E'}
 
 team_emojis = {'ANA': 1309592481020510208,
                'BOS': 1309592803143323771,
@@ -117,13 +117,17 @@ def verify_team(team: str):
 
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):
-    url = BASE_URL + endpoint
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json(), None
-    else:
-        log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}')
-        return None, response.status_code
+    try:
+        url = BASE_URL + endpoint
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json(), None
+        else:
+            log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}')
+            return None, response.status_code
+    except requests.RequestException as e:
+        log_data(f'REQUEST ERROR: {e}')
+        
 
 def get_data(category: str, params: dict):
     endpoint = category.format(**params)
