@@ -78,8 +78,8 @@ class HelpView(discord.ui.View):
             title='Admin Commands',
             description='''`$startgame team -u*` Start a game in the channel running this command. Game events will be sent for goals, penalties, etc... -u will ping anyone who opts in for pings
             `$wipeuser user` Wipe a user from the economy. This removes all their data
-            `$addmoney user` Give a user money
-            `$takemoney user` Take away money from a user
+            `$addmoney user amount` Give a user money
+            `$takemoney user amount` Take away money from a user
             `$reseteconomy confirmation` IRREVERSABLE! Confirmation is the server ID to prevent accidental usage. Deletes all data for the server
             `$enableroles` Creates team roles for users
             `$disableroles` Deletes the team roles''',
@@ -467,7 +467,7 @@ class Moderator(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='addmoney Usage',
-                description='$addmoney **user**',
+                description='$addmoney **user** **amount**',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -489,7 +489,7 @@ class Moderator(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='takemoney Usage',
-                description='$takemoney **user**',
+                description='$takemoney **user** **amount**',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
