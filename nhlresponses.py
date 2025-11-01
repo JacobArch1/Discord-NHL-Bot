@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import math
 import discord
 import sqlite3
 from collections import defaultdict
@@ -622,10 +623,9 @@ async def get_game_story(team: str, date: str) -> discord.Embed:
     team_stats = game_story['summary']['teamGameStats']
     table = [
         '```',
-        f'{'STAT':<16}{f'{home_team_abbr}':>8}{f'{away_team_abbr}':>5}\n',
+        f'{'STAT':<16}{f'{home_team_abbr}':>8}{f'{away_team_abbr}':>30}\n',
     ]
     desired_stats = {'sog': 'SOG', 
-                     'powerPlay': 'POWER PLAY GOALS', 
                      'pim': 'PENALTY MINUTES', 
                      'hits': 'HITS', 
                      'blockedShots': 'BLOCKED SHOTS', 
@@ -633,7 +633,12 @@ async def get_game_story(team: str, date: str) -> discord.Embed:
                      'takeaways': 'TAKEAWAYS'}
     for stat in team_stats:
         if stat['category'] in desired_stats:
-            table.append(f'{desired_stats[stat['category']]:<16}{stat['homeValue']:>8}{stat['awayValue']:>5}')
+            home_stat = int(stat['homeValue'])
+            away_stat = int(stat['awayValue'])
+            total_stat = home_stat + away_stat
+            ratio = math.floor(((home_stat / (total_stat)) * 100) / 10)
+            bar = "⬜" * ratio + "⬛" * (10 - ratio)
+            table.append(f'{desired_stats[stat['category']]:<16}{home_stat:>8}{"":>2}{bar:>2}{away_stat:>5}')
     table.append('```')
     table = '\n'.join(table)
     embed.add_field(

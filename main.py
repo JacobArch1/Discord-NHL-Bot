@@ -259,7 +259,7 @@ class NHL(commands.Cog):
 
     #--------------GAMESTORY--------------
     #team (REQUIRED): Three letter abbrev for your team
-    #date (REQUIRED): Format YYYY-MM-DD
+    #date (OPTIONAL): Format YYYY-MM-DD
     
     @commands.command(name='gamestory')
     async def gamestory_command(self, ctx, team: str, date: Optional[str]):
@@ -274,7 +274,7 @@ class NHL(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed=discord.Embed(
                 title='gamestory Usage',
-                description='$gamestory **team** **date**\nUse three letter abbrev for your team and YYYY-MM-DD format for the date\n\nExample: ```$gamestory MTL 2024-12-03```',
+                description='$gamestory **team** **date** [OPT]\nUse three letter abbrev for your team and YYYY-MM-DD format for the date\n\nExample: ```$gamestory MTL 2024-12-03```',
                 color=discord.Color.lighter_gray()
             )
             await ctx.send(embed=embed)
@@ -494,7 +494,7 @@ class Moderator(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    #--------------WIPEUSER-------------
+    #--------------WIPEECONOMY-------------
     #Confirmation (REQUIRED): Guild ID to make sure no accidental usage
     
     @commands.command(name='reseteconomy')
@@ -533,9 +533,9 @@ class Moderator(commands.Cog):
             await ctx.send(embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('ENABLEROLES', [ctx.guild.id], e))
-            
+
     #--------------DISABLEROLES-------------
-            
+
     @commands.command(name='disableroles')
     @commands.has_permissions(administrator=True)
     async def disableroles_command(self, ctx):
@@ -544,7 +544,7 @@ class Moderator(commands.Cog):
             await ctx.send(embed=response)
         except Exception as e:
             await ctx.send(embed=await return_error('DISABLEROLES', [ctx.guild.id], e))
-            
+  
     #--------------PERMISSIONERROR-------------
     
     @commands.Cog.listener()
@@ -594,7 +594,7 @@ class Scheduled(commands.Cog):
 async def return_error(command: str, parameters: list[str], e: str) -> discord.Embed:
     nhl.log_data (f'Error occured using command {command} with parameters: {parameters}, ERR: {e}')
     embed = discord.Embed(title = 'Error', color = discord.Color.red())
-    embed.add_field(name='', value=f'This is likely a code error\nCheck parameters and try again', inline=False)
+    embed.add_field(name='', value=f'Check parameters and try again', inline=False)
     return embed
 
 async def setup(bot):

@@ -118,13 +118,15 @@ def verify_team(team: str):
 #  -------------------- API ENDPOINTS  -------------------- #
 def connect_endpoint(endpoint: str):
     try:
-        url = BASE_URL + endpoint
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json(), None
-        else:
-            log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}')
-            return None, response.status_code
+        num_retries = 3
+        for i in range(num_retries):
+            url = BASE_URL + endpoint
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json(), None
+            else:
+                log_data(f'REQUEST ERROR Using URL:{url} Response:{response.status_code}')
+                return None, response.status_code
     except requests.RequestException as e:
         log_data(f'REQUEST ERROR: {e}')
         
